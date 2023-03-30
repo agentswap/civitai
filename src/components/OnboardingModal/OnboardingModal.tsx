@@ -40,12 +40,12 @@ const schema = z.object({
     .string()
     .min(3, 'Your username must be at least 3 characters long')
     .regex(/^[A-Za-z0-9_]*$/, 'The "username" field can only contain letters, numbers, and _.'),
-  email: z
-    .string({
-      invalid_type_error: 'Please provide an email',
-      required_error: 'Please provide an email',
-    })
-    .email(),
+  // email: z
+  //   .string({
+  //     invalid_type_error: 'Please provide an email',
+  //     required_error: 'Please provide an email',
+  //   })
+  //   .email(),
 });
 
 export default function OnboardingModal() {
@@ -108,7 +108,7 @@ export default function OnboardingModal() {
   const handleDeclineTOS = () => signOut();
   const handleAcceptTOS = () => {
     acceptTOS(undefined, {
-      async onSuccess() {
+      async onSuccess(data) {
         setActiveStep((x) => x + 1);
       },
     });
