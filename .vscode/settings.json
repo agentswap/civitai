@@ -24,6 +24,7 @@
     "NEXTAUTH",
     "siwe",
     "tanstack",
-    "trpc"
+    "trpc",
+    "wagmi"
   ],
 }

@@ -131,7 +131,7 @@ export const createAuthOptions = (req: NextApiRequest): NextAuthOptions => ({
         message: { label: 'Message', type: 'text', placeholder: '0x0' },
         signature: { label: 'Signature', type: 'text', placeholder: '0x0' },
       },
-      // @ts-expect-error - this is a bug in the types
+      // @ts-expect-error - this is a bug in the types, user.id is string but it should be number
       async authorize(credentials) {
         try {
           const siwe = new SiweMessage(JSON.parse(credentials?.message || '{}'));
@@ -147,7 +147,7 @@ export const createAuthOptions = (req: NextApiRequest): NextAuthOptions => ({
           const existingUser = await dbWrite.user.findUnique({
             where: { ethereumAddress },
           });
-          if (existingUser) return { ...existingUser, id: String(existingUser.id) };
+          if (existingUser) return existingUser;
 
           const newUser = await dbWrite.user.create({
             data: {
@@ -156,7 +156,7 @@ export const createAuthOptions = (req: NextApiRequest): NextAuthOptions => ({
               ethereumAddress,
             },
           });
-          return { ...newUser, id: String(newUser.id) };
+          return newUser;
         } catch (e) {
           return null;
         }

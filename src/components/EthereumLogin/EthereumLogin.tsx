@@ -1,10 +1,11 @@
 import { useWeb3Modal } from '@web3modal/react';
 import { SocialButton } from '../Social/SocialButton';
 import { useCallback, MouseEvent, useMemo } from 'react';
-import { goerli, useAccount, useNetwork, useSignMessage } from 'wagmi';
+import { useAccount, useNetwork, useSignMessage } from 'wagmi';
 import { getCsrfToken, signIn } from 'next-auth/react';
 import { SiweMessage } from 'siwe';
 import { shortenIfAddress } from '~/utils/address';
+import { getDefaultChain } from '~/utils/chain';
 
 type Props = {
   callbackUrl?: string;
@@ -21,8 +22,8 @@ export const EthereumLogin = ({ callbackUrl }: Props) => {
   );
 
   const handleConnect = useCallback(async () => {
-    // TODO: configure default chain
-    setDefaultChain(goerli);
+    const chain = getDefaultChain();
+    setDefaultChain(chain);
     if (isOpen) return;
     await open({ route: 'ConnectWallet' });
   }, [isOpen, open, setDefaultChain]);
@@ -40,12 +41,7 @@ export const EthereumLogin = ({ callbackUrl }: Props) => {
     const signature = await signMessageAsync({
       message: message.prepareMessage(),
     });
-    signIn('credentials', {
-      message: JSON.stringify(message),
-      redirect: false,
-      signature,
-      callbackUrl,
-    });
+    signIn('credentials', { message: JSON.stringify(message), signature, callbackUrl });
   }, [address, callbackUrl, chain?.id, signMessageAsync]);
 
   const handleButtonClick = useCallback(

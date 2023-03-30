@@ -5,7 +5,7 @@ import { configureChains, createClient, WagmiConfig } from 'wagmi';
 import { mainnet, goerli } from 'wagmi/chains';
 import { env } from '~/env/client.mjs';
 
-const chains = [mainnet, goerli];
+export const chains = [mainnet, goerli];
 const projectId = env.NEXT_PUBLIC_WALLET_CONNECT_ID;
 
 const { provider } = configureChains(chains, [w3mProvider({ projectId })]);
