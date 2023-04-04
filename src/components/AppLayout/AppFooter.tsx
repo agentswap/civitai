@@ -77,16 +77,19 @@ export function AppFooter() {
           </Stack>
         )}
         <Group spacing={0} sx={{ flexWrap: 'nowrap' }}>
-          <Button
-            component={NextLink}
-            href="/pricing"
-            {...buttonProps}
-            variant="subtle"
-            color="pink"
-            px={mobile ? 5 : 'xs'}
-          >
-            Support Us ❤️
-          </Button>
+          {false && (
+            <Button
+              component={NextLink}
+              href="/pricing"
+              {...buttonProps}
+              variant="subtle"
+              color="pink"
+              px={mobile ? 5 : 'xs'}
+            >
+              Support Us ❤️
+            </Button>
+          )}
+
           <Button
             component={NextLink}
             prefetch={false}
