@@ -57,7 +57,7 @@ export function AppFooter() {
             if (hash) setShowHash((x) => !x);
           }}
         >
-          &copy; Civitai {new Date().getFullYear()}
+          &copy; Agentswap {new Date().getFullYear()}
         </Text>
         {showHash && hash && (
           <Stack spacing={2}>
