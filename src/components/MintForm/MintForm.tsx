@@ -179,11 +179,9 @@ export function MintForm() {
               />
             </>
           )}
-          {
-            <Text color="dimmed" size="xs">
-              Current ModelId: {modelId}
-            </Text>
-          }
+          <Text color="dimmed" size="xs">
+            Current ModelId: {modelId}
+          </Text>
           {address && (
             <Text color="dimmed" size="xs">
               Current Wallet: {address}
