@@ -1,5 +1,6 @@
 import { PrismaAdapter } from '@next-auth/prisma-adapter';
 import { User } from '@prisma/client';
+import { NextApiRequest, NextApiResponse } from 'next';
 import NextAuth, { Session, type NextAuthOptions } from 'next-auth';
 import { getToken } from 'next-auth/jwt';
 import DiscordProvider from 'next-auth/providers/discord';
@@ -41,7 +42,7 @@ const cookiePrefix = useSecureCookies ? '__Secure-' : '';
 const { host, hostname } = new URL(env.NEXTAUTH_URL);
 const cookieName = `${cookiePrefix}agentswap-token`;
 
-export const authOptions: NextAuthOptions = {
+export const createAuthOptions = (req: NextApiRequest): NextAuthOptions => ({
   adapter: PrismaAdapter(dbWrite),
   session: {
     strategy: 'jwt',
@@ -63,8 +64,8 @@ export const authOptions: NextAuthOptions = {
 
       return true;
     },
-    async jwt({ token, user, trigger }) {
-      if (trigger === 'update') {
+    async jwt({ token, user }) {
+      if (req.url === '/api/auth/session?update') {
         await invalidateSession(Number(token.sub));
         const user = await getSessionUser({ userId: Number(token.sub) });
         token.user = user;
@@ -77,8 +78,8 @@ export const authOptions: NextAuthOptions = {
 
       return token;
     },
-    async session({ session, token, trigger }) {
-      if (trigger === 'update') {
+    async session({ session, token }) {
+      if (req.url !== '/api/auth/session?update') {
         token = await refreshToken(token);
       }
       session.user = (token.user ? token.user : session.user) as Session['user'];
@@ -219,6 +220,11 @@ export const authOptions: NextAuthOptions = {
     signIn: '/login',
     error: '/login',
   },
+});
+
+const authOptions = async (req: NextApiRequest, res: NextApiResponse) => {
+  console.log(req.url);
+  return NextAuth(req, res, createAuthOptions(req));
 };
 
-export default NextAuth(authOptions);
+export default authOptions;

@@ -2,6 +2,7 @@ import { Card, Divider, Group, Select, Stack, Switch, Title } from '@mantine/cor
 
 import { useCurrentUser } from '~/hooks/useCurrentUser';
 import { constants } from '~/server/common/constants';
+import { reloadSession } from '~/utils/next-auth-helpers';
 import { showSuccessNotification } from '~/utils/notifications';
 import { titleCase } from '~/utils/string-helpers';
 import { trpc } from '~/utils/trpc';
@@ -16,7 +17,7 @@ export function SettingsCard() {
     async onSuccess() {
       await utils.model.getAll.invalidate();
       await utils.review.getAll.invalidate();
-      user?.refresh();
+      await reloadSession();
       showSuccessNotification({ message: 'User profile updated' });
     },
   });

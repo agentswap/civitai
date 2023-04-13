@@ -123,6 +123,7 @@ export const useInfiniteModelsFilters = () => {
     checkpointType,
     earlyAccess,
     ...filters,
+    authed: currentUser ? true : undefined,
   };
 };
 
