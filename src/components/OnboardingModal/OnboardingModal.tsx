@@ -76,6 +76,7 @@ export default function OnboardingModal() {
   const { mutate: completeOnboarding, isLoading: completeOnboardingLoading } =
     trpc.user.completeOnboarding.useMutation({
       async onSuccess() {
+        user?.refresh();
         await invalidateModeratedContent(utils);
       },
     });

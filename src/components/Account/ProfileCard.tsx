@@ -32,7 +32,6 @@ import { usernameSchema } from '~/server/schema/user.schema';
 import { BadgeCosmetic, NamePlateCosmetic } from '~/server/selectors/cosmetic.selector';
 import { UserWithCosmetics } from '~/server/selectors/user.selector';
 import { formatDate } from '~/utils/date-helpers';
-import { reloadSession } from '~/utils/next-auth-helpers';
 import { showSuccessNotification } from '~/utils/notifications';
 import { trpc } from '~/utils/trpc';
 
@@ -63,7 +62,7 @@ export function ProfileCard() {
       // await utils.model.getAll.invalidate();
       await queryUtils.review.getAll.invalidate();
       await queryUtils.comment.getAll.invalidate();
-      await reloadSession();
+      currentUser?.refresh();
 
       if (user)
         form.reset({

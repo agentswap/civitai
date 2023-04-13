@@ -64,8 +64,8 @@ export const createAuthOptions = (req: NextApiRequest): NextAuthOptions => ({
 
       return true;
     },
-    async jwt({ token, user }) {
-      if (req.url === '/api/auth/session?update') {
+    async jwt({ token, user, trigger }) {
+      if (trigger === 'update') {
         await invalidateSession(Number(token.sub));
         const user = await getSessionUser({ userId: Number(token.sub) });
         token.user = user;
@@ -78,8 +78,8 @@ export const createAuthOptions = (req: NextApiRequest): NextAuthOptions => ({
 
       return token;
     },
-    async session({ session, token }) {
-      if (req.url !== '/api/auth/session?update') {
+    async session({ session, token, trigger }) {
+      if (trigger === 'update') {
         token = await refreshToken(token);
       }
       session.user = (token.user ? token.user : session.user) as Session['user'];
@@ -134,7 +134,7 @@ export const createAuthOptions = (req: NextApiRequest): NextAuthOptions => ({
         signature: { label: 'Signature', type: 'text', placeholder: '0x0' },
       },
       // @ts-expect-error - this is a bug in the types, user.id is string but it should be number
-      async authorize(credentials, req) {
+      async authorize(credentials) {
         try {
           const message = JSON.parse(credentials?.message || '{}');
           const signature = credentials?.signature || '';
@@ -180,14 +180,13 @@ export const createAuthOptions = (req: NextApiRequest): NextAuthOptions => ({
           }
 
           // Connect
-          // TODO: Reimplement this
-          // const token = await getToken({ req, cookieName, secureCookie: useSecureCookies });
-          // if (token) {
-          //   const user = await findUniqueUser(Number(token.sub));
-          //   if (!user) return null;
-          //   await createNewAccount(user.id);
-          //   return user;
-          // }
+          const token = await getToken({ req, cookieName, secureCookie: useSecureCookies });
+          if (token) {
+            const user = await findUniqueUser(Number(token.sub));
+            if (!user) return null;
+            await createNewAccount(user.id);
+            return user;
+          }
 
           // Sign-Up
           const newUser = await dbWrite.user.create({
@@ -223,7 +222,6 @@ export const createAuthOptions = (req: NextApiRequest): NextAuthOptions => ({
 });
 
 const authOptions = async (req: NextApiRequest, res: NextApiResponse) => {
-  console.log(req.url);
   return NextAuth(req, res, createAuthOptions(req));
 };
 
