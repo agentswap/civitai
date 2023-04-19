@@ -320,8 +320,6 @@ ModelUpsertInput & { userId: number; meta?: Prisma.ModelCreateInput['meta'] }) =
   if (!id) {
     return dbWrite.model.create({
       select: { id: true },
-      // TODO: Don't know how to fix type error here
-      // @ts-ignore
       data: {
         ...data,
         app: app
@@ -332,8 +330,11 @@ ModelUpsertInput & { userId: number; meta?: Prisma.ModelCreateInput['meta'] }) =
               },
             }
           : undefined,
-        user: undefined,
-        userId,
+        user: {
+          connect: {
+            id: userId,
+          },
+        },
         tagsOnModels: tagsOnModels
           ? {
               create: tagsOnModels.map((tag) => {
@@ -416,15 +417,18 @@ export const createModel = async ({
       });
 
     return tx.model.create({
-      // TODO: Don't know how to fix type error here
-      // @ts-ignore
       data: {
         ...data,
+        id: undefined,
         checkpointType: data.type === ModelType.Checkpoint ? data.checkpointType : null,
         publishedAt: data.status === ModelStatus.Published ? new Date() : null,
         lastVersionAt: new Date(),
         nsfw: data.nsfw || (allImagesNSFW && data.status === ModelStatus.Published),
-        userId,
+        user: {
+          connect: {
+            id: userId,
+          },
+        },
         app: app
           ? {
               create: {
