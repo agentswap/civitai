@@ -18,30 +18,10 @@ enum UpsertRepoMode {
 
 export function ModelAppUpsertForm({ model, children, onSubmit }: Props) {
   const [upsertRepoMode, setUpsertRepoMode] = useState<UpsertRepoMode>(UpsertRepoMode.Select);
+  const { data: existedRepository = [] } = trpc.modelApp.getAll.useQuery();
 
-  const existedRepository = useMemo(
-    () => [
-      {
-        id: '1',
-        name: 'microsoft/JARVIS',
-        url: 'https://github.com/microsoft/JARVIS',
-      },
-      {
-        id: '2',
-        name: 'microsoft/JARVIS 2',
-        url: 'https://github.com/microsoft/JARVIS',
-      },
-      {
-        id: '3',
-        name: 'microsoft/JARVIS 3',
-        url: 'https://github.com/microsoft/JARVIS',
-      },
-    ],
-    []
-  );
-
-  const selectExistendRepositoryData = useMemo<{ value: string; label: string }[]>(
-    () => existedRepository.map((item) => ({ value: item.id, label: item.name })),
+  const selectExistedRepositoryData = useMemo<{ value: string; label: string }[]>(
+    () => existedRepository.map((item) => ({ value: item.id.toString(), label: item.name })),
     [existedRepository]
   );
 
@@ -51,10 +31,7 @@ export function ModelAppUpsertForm({ model, children, onSubmit }: Props) {
         (item) => String(item.id) === String(model?.app?.id)
       );
       if (selectDefault) {
-        return selectDefault.id;
-      } else {
-        // TODO: Mock data, need to remove
-        return '1';
+        return selectDefault.id.toString();
       }
     }
     return undefined;
@@ -165,7 +142,7 @@ export function ModelAppUpsertForm({ model, children, onSubmit }: Props) {
                 name="existedRepository"
                 label="Choose an existed repository"
                 placeholder="Pick one"
-                data={selectExistendRepositoryData}
+                data={selectExistedRepositoryData}
                 withAsterisk
               />
             ) : upsertRepoMode === UpsertRepoMode.Import ? (
