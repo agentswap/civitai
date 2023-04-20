@@ -9,6 +9,7 @@ import {
   createStyles,
 } from '@mantine/core';
 import { NextLink } from '@mantine/next';
+import { ModelType } from '@prisma/client';
 import {
   IconAlertTriangle,
   IconDotsVertical,
@@ -20,7 +21,7 @@ import {
   IconFileSettings,
 } from '@tabler/icons';
 import { useRouter } from 'next/router';
-import { useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { openRoutedContext } from '~/providers/RoutedContextProvider';
 
 import { ModelById } from '~/types/router';
@@ -84,11 +85,13 @@ export function ModelVersionList({
   versions,
   selected,
   showExtraIcons,
+  type,
   onVersionClick,
   onDeleteClick,
 }: Props) {
   const { classes, cx, theme } = useStyles();
   const router = useRouter();
+  const isModelApp = useMemo(() => type === ModelType.App, [type]);
 
   const viewportRef = useRef<HTMLDivElement>(null);
   const [scrollPosition, setScrollPosition] = useState({ x: 0, y: 0 });
@@ -149,6 +152,7 @@ export function ModelVersionList({
                 return onVersionClick(version);
               }}
               leftIcon={
+                // TODO: Need to judge whether to set app
                 showExtraIcons && (missingFiles || missingPosts) ? (
                   <ThemeIcon
                     color="yellow"
@@ -214,17 +218,20 @@ export function ModelVersionList({
                   >
                     Edit details
                   </Menu.Item>
-                  <Menu.Item
-                    icon={<IconFileSettings size={14} stroke={1.5} />}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      openRoutedContext('filesEdit', {
-                        modelVersionId: version.id,
-                      });
-                    }}
-                  >
-                    Manage files
-                  </Menu.Item>
+                  {!isModelApp && (
+                    // TODO: Manage App
+                    <Menu.Item
+                      icon={<IconFileSettings size={14} stroke={1.5} />}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openRoutedContext('filesEdit', {
+                          modelVersionId: version.id,
+                        });
+                      }}
+                    >
+                      Manage files
+                    </Menu.Item>
+                  )}
                   {version.posts.length > 0 && (
                     <Menu.Item
                       component={NextLink}
@@ -261,4 +268,5 @@ type Props = {
   onDeleteClick: (versionId: number) => void;
   selected?: number;
   showExtraIcons?: boolean;
+  type: ModelType;
 };

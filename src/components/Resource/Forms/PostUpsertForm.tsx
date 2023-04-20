@@ -1,10 +1,11 @@
 import { Button, Grid, Group, Stack, Text, Tooltip } from '@mantine/core';
 import { openConfirmModal } from '@mantine/modals';
-import { ModelStatus } from '@prisma/client';
+import { ModelStatus, ModelType } from '@prisma/client';
 import { IconAlertTriangle, IconArrowsSort } from '@tabler/icons';
 import { TRPCClientErrorBase } from '@trpc/client';
 import { DefaultErrorShape } from '@trpc/server';
 import { useRouter } from 'next/router';
+import { useMemo } from 'react';
 
 import { DaysFromNow } from '~/components/Dates/DaysFromNow';
 import { ImageDropzone } from '~/components/Image/ImageDropzone/ImageDropzone';
@@ -114,10 +115,14 @@ function PublishButton({ modelId, modelVersionId }: { modelId: number; modelVers
   const { mutate, isLoading } = trpc.post.update.useMutation();
   const publishModelMutation = trpc.model.publish.useMutation();
   const publishVersionMutation = trpc.modelVersion.publish.useMutation();
+  const isModelApp = useMemo(
+    () => modelVersion?.model.type === ModelType.App,
+    [modelVersion?.model.type]
+  );
 
   const canSave =
     tags.filter((x) => !!x.id).length > 0 && images.filter((x) => x.type === 'image').length > 0;
-  const canPublish = !isUploading && (!!modelVersion?.files?.length || app);
+  const canPublish = !isUploading && (!!modelVersion?.files?.length || isModelApp);
 
   const handlePublish = () => {
     if (!currentUser || !modelVersion) return;

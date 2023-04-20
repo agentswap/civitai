@@ -20,7 +20,7 @@ import {
 import { useDisclosure } from '@mantine/hooks';
 import { closeAllModals, openConfirmModal } from '@mantine/modals';
 import { NextLink } from '@mantine/next';
-import { ModelModifier, ModelStatus } from '@prisma/client';
+import { ModelModifier, ModelStatus, ModelType } from '@prisma/client';
 import {
   IconArchive,
   IconArrowsLeftRight,
@@ -47,7 +47,7 @@ import truncate from 'lodash/truncate';
 import { InferGetServerSidePropsType } from 'next';
 import Link from 'next/link';
 import Router, { useRouter } from 'next/router';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { getEdgeUrl } from '~/client-utils/cf-images-utils';
 import { Announcements } from '~/components/Announcements/Announcements';
@@ -167,6 +167,7 @@ export default function ModelDetailsV2({
 
   const rawVersionId = router.query.modelVersionId;
   const modelVersionId = Array.isArray(rawVersionId) ? rawVersionId[0] : rawVersionId;
+  const isModelApp = useMemo(() => model?.type === ModelType.App, [model?.type]);
 
   const isModerator = currentUser?.isModerator ?? false;
   const isOwner = model?.user.id === currentUser?.id || isModerator;
@@ -468,11 +469,13 @@ export default function ModelDetailsV2({
                       </Text>
                     </IconBadge>
                   </LoginRedirect>
-                  <IconBadge radius="sm" size="lg" icon={<IconDownload size={18} />}>
-                    <Text className={classes.modelBadgeText}>
-                      {abbreviateNumber(model.rank?.downloadCountAllTime ?? 0)}
-                    </Text>
-                  </IconBadge>
+                  {!isModelApp && (
+                    <IconBadge radius="sm" size="lg" icon={<IconDownload size={18} />}>
+                      <Text className={classes.modelBadgeText}>
+                        {abbreviateNumber(model.rank?.downloadCountAllTime ?? 0)}
+                      </Text>
+                    </IconBadge>
+                  )}
                   {!model.locked && (
                     <IconBadge
                       radius="sm"
@@ -738,7 +741,6 @@ export default function ModelDetailsV2({
                     <IconPlus size={14} />
                   </ActionIcon>
                 </ButtonTooltip>
-
                 {versionCount > 1 && (
                   <ButtonTooltip label="Rearrange Versions">
                     <ActionIcon onClick={toggle}>
@@ -759,6 +761,7 @@ export default function ModelDetailsV2({
               }}
               onDeleteClick={handleDeleteVersion}
               showExtraIcons={isOwner || isModerator}
+              type={model.type}
             />
           </Group>
           {!!selectedVersion && (

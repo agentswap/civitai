@@ -14,6 +14,8 @@ import { trpc } from '~/utils/trpc';
 import { isNumber } from '~/utils/type-guards';
 
 import { PostUpsertForm } from '../Forms/PostUpsertForm';
+import { ModelType } from '@prisma/client';
+import { ModelAppUpsertForm } from '../Forms/ModelAppUpsertForm';
 
 export function ModelVersionWizard({ data }: Props) {
   const router = useRouter();
@@ -33,6 +35,8 @@ export function ModelVersionWizard({ data }: Props) {
       },
     }
   );
+
+  const isApp = modelVersion?.model?.type === ModelType.App;
 
   const goNext = () => {
     if (activeStep < 3)
@@ -129,45 +133,68 @@ export function ModelVersionWizard({ data }: Props) {
               </ModelVersionUpsertForm>
             </Stack>
           </Stepper.Step>
-          <Stepper.Step label="Upload files">
-            <Stack spacing="xl">
-              <Title order={3}>Upload files</Title>
-              <Files model={modelVersion?.model} version={modelVersion} />
-              <Group position="right">
-                <Button variant="default" onClick={goBack}>
-                  Back
-                </Button>
-                <Button
-                  onClick={() => {
-                    const { uploading = 0, success = 0 } = useS3UploadStore
-                      .getState()
-                      .getStatus((item) => item.meta?.versionId === modelVersion?.id);
-
-                    const showConfirmModal =
-                      (uploading > 0 && success === 0) || !modelVersion?.files.length;
-
-                    if (showConfirmModal) {
-                      return openConfirmModal({
-                        title: (
-                          <Group spacing="xs">
-                            <IconAlertTriangle color="gold" />
-                            <Text size="lg">Missing files</Text>
-                          </Group>
-                        ),
-                        children:
-                          'You have not uploaded any files. You can continue without files, but you will not be able to publish your model. Are you sure you want to continue?',
-                        labels: { cancel: 'Cancel', confirm: 'Continue' },
-                        onConfirm: goNext,
-                      });
-                    }
-
-                    return goNext();
+          <Stepper.Step label={isApp ? 'Set repository' : 'Upload files'}>
+            {isApp ? (
+              <Stack>
+                <Title order={3}>Set repository</Title>
+                <ModelAppUpsertForm
+                  model={modelVersion?.model}
+                  onSubmit={() => {
+                    if (editing) return goNext();
+                    router.replace(
+                      `/models/${modelVersion?.model.id}/model-versions/${versionId}/wizard?step=2`
+                    );
                   }}
                 >
-                  Next
-                </Button>
-              </Group>
-            </Stack>
+                  {({ loading }) => (
+                    <Group mt="xl" position="right">
+                      <Button type="submit" loading={loading}>
+                        Next
+                      </Button>
+                    </Group>
+                  )}
+                </ModelAppUpsertForm>
+              </Stack>
+            ) : (
+              <Stack spacing="xl">
+                <Title order={3}>Upload files</Title>
+                <Files model={modelVersion?.model} version={modelVersion} />
+                <Group position="right">
+                  <Button variant="default" onClick={goBack}>
+                    Back
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      const { uploading = 0, success = 0 } = useS3UploadStore
+                        .getState()
+                        .getStatus((item) => item.meta?.versionId === modelVersion?.id);
+
+                      const showConfirmModal =
+                        (uploading > 0 && success === 0) || !modelVersion?.files.length;
+
+                      if (showConfirmModal) {
+                        return openConfirmModal({
+                          title: (
+                            <Group spacing="xs">
+                              <IconAlertTriangle color="gold" />
+                              <Text size="lg">Missing files</Text>
+                            </Group>
+                          ),
+                          children:
+                            'You have not uploaded any files. You can continue without files, but you will not be able to publish your model. Are you sure you want to continue?',
+                          labels: { cancel: 'Cancel', confirm: 'Continue' },
+                          onConfirm: goNext,
+                        });
+                      }
+
+                      return goNext();
+                    }}
+                  >
+                    Next
+                  </Button>
+                </Group>
+              </Stack>
+            )}
           </Stepper.Step>
           <Stepper.Step label={postId ? 'Edit post' : 'Create a post'}>
             <Stack spacing="xl">
