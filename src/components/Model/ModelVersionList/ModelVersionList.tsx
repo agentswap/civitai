@@ -218,8 +218,19 @@ export function ModelVersionList({
                   >
                     Edit details
                   </Menu.Item>
-                  {!isModelApp && (
-                    // TODO: Manage App
+                  {isModelApp ? (
+                    <Menu.Item
+                      icon={<IconFileSettings size={14} stroke={1.5} />}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openRoutedContext('appEdit', {
+                          modelVersionId: version.id,
+                        });
+                      }}
+                    >
+                      Manage app
+                    </Menu.Item>
+                  ) : (
                     <Menu.Item
                       icon={<IconFileSettings size={14} stroke={1.5} />}
                       onClick={(e) => {

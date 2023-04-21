@@ -15,7 +15,7 @@ import {
   useMantineTheme,
 } from '@mantine/core';
 import { NextLink } from '@mantine/next';
-import { ModelStatus } from '@prisma/client';
+import { ModelStatus, ModelType } from '@prisma/client';
 import {
   IconStar,
   IconDownload,
@@ -170,8 +170,10 @@ export function AmbientModelCard({ data, width, height }: Props) {
   const theme = useMantineTheme();
   const { push } = useRouter();
 
-  const { id, image, name, rank, user, locked, earlyAccessDeadline } = data ?? {};
+  const { id, image, name, rank, user, locked, earlyAccessDeadline, type } = data ?? {};
   const inEarlyAccess = earlyAccessDeadline && isFutureDate(earlyAccessDeadline);
+
+  const isModelApp = useMemo(() => type === ModelType.App, [type]);
 
   const [loading, setLoading] = useState(false);
 
@@ -243,7 +245,7 @@ export function AmbientModelCard({ data, width, height }: Props) {
     </IconBadge>
   ) : null;
 
-  const modelDownloads = (
+  const modelDownloads = !isModelApp && (
     <IconBadge className={classes.statBadge} icon={<IconDownload size={14} />}>
       <Text size={12}>{abbreviateNumber(rank.downloadCount)}</Text>
     </IconBadge>
