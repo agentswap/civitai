@@ -1,5 +1,11 @@
 import { utils } from 'ethers';
-import { shortenString } from './string-helpers';
+
+/**
+ * Copied from useDapp
+ */
+export function shortenAddressString(str: string) {
+  return str.substring(0, 6) + '...' + str.substring(str.length - 4);
+}
 
 /**
  * Copied from useDapp
@@ -7,7 +13,7 @@ import { shortenString } from './string-helpers';
 export function shortenAddress(address: string): string {
   try {
     const formattedAddress = utils.getAddress(address);
-    return shortenString(formattedAddress);
+    return shortenAddressString(formattedAddress);
   } catch {
     throw new TypeError("Invalid input, address can't be parsed");
   }
