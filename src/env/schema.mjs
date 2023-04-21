@@ -76,6 +76,7 @@ export const serverSchema = z.object({
   PLAYFAB_SECRET_KEY: z.string().optional(),
   TRPC_ORIGINS: stringArray().optional(),
   CHAIN_RPC_URL: z.string(),
+  HOSTING_WORKER_URL: z.string().url(),
 })
 
 /**
@@ -110,5 +111,5 @@ export const clientEnv = {
   NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
   NEXT_PUBLIC_WALLET_CONNECT_ID: process.env.NEXT_PUBLIC_WALLET_CONNECT_ID,
   NEXT_PUBLIC_CHAIN_ID: process.env.NEXT_PUBLIC_CHAIN_ID,
-  NEXT_PUBLIC_INFURA_API_KEY: process.env.NEXT_PUBLIC_INFURA_API_KEY
+  NEXT_PUBLIC_INFURA_API_KEY: process.env.NEXT_PUBLIC_INFURA_API_KEY,
 };
