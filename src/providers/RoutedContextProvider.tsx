@@ -22,6 +22,7 @@ const CommentEdit = dynamic(() => import('~/routed-context/modals/CommentEdit'))
 const ModelEdit = dynamic(() => import('~/routed-context/modals/ModelEdit'));
 const ModelVersionEdit = dynamic(() => import('~/routed-context/modals/ModelVersionEdit'));
 const FilesEdit = dynamic(() => import('~/routed-context/modals/FilesEdit'));
+const AppEdit = dynamic(() => import('~/routed-context/modals/AppEdit'));
 const ResourceReviewModal = dynamic(() => import('~/routed-context/modals/ResourceReviewModal'));
 const PostDetailModal = dynamic(() => import('~/routed-context/modals/PostDetailModal'));
 
@@ -52,6 +53,14 @@ const registry = {
     Component: FilesEdit,
     resolve: (args: React.ComponentProps<typeof FilesEdit>) => [
       { query: { ...Router.query, ...args, modal: 'filesEdit' } },
+      undefined, // could be a page url for reviews here (/reviews/:reviewId)
+      { shallow: true },
+    ],
+  },
+  appEdit: {
+    Component: AppEdit,
+    resolve: (args: React.ComponentProps<typeof AppEdit>) => [
+      { query: { ...Router.query, ...args, modal: 'appEdit' } },
       undefined, // could be a page url for reviews here (/reviews/:reviewId)
       { shallow: true },
     ],
