@@ -4,7 +4,6 @@ import { throwNotFoundError } from '../utils/errorHandling';
 import { createLogger } from '~/utils/logging';
 
 const log = createLogger('hosting-worker', 'blue');
-
 const hostingWorkerUrl = new URL(env.HOSTING_WORKER_URL).origin;
 
 export type CreateModelAppResponse = {
@@ -19,7 +18,7 @@ type CreateModelAppError = {
   message: string;
 };
 
-export const createModelApp = async (appId: number) => {
+export const hostModelApp = async (appId: number) => {
   const modelAppInfo = await dbRead.modelApp.findUnique({ where: { id: appId } });
 
   if (!modelAppInfo) {

@@ -2,6 +2,7 @@ import { ModelMeta, ToggleModelLockInput } from './../schema/model.schema';
 import {
   CommercialUse,
   MetricTimeframe,
+  Model,
   ModelStatus,
   ModelType,
   Prisma,
@@ -34,6 +35,14 @@ import { throwNotFoundError } from '~/server/utils/errorHandling';
 import { DEFAULT_PAGE_SIZE, getPagination, getPagingData } from '~/server/utils/pagination-helpers';
 import { prepareFile } from '~/utils/file-helpers';
 import { getDefaultProvider } from '~/utils/chain-provider';
+import { decreaseDate } from '~/utils/date-helpers';
+import { ManipulateType } from 'dayjs';
+import { hostModelApp } from '~/server/services/hosting-worker.service';
+
+type ModelAppCreateOrConnect = {
+  connect?: Prisma.ModelAppWhereUniqueInput;
+  create?: Prisma.ModelAppCreateWithoutModelInput;
+};
 
 export const getModel = <TSelect extends Prisma.ModelSelect>({
   id,
@@ -316,19 +325,18 @@ export const upsertModel = ({
   ...data
 }: // TODO.manuel: hardcoding meta type since it causes type issues in lots of places if we set it in the schema
 ModelUpsertInput & { userId: number; meta?: Prisma.ModelCreateInput['meta'] }) => {
+  let appData: ModelAppCreateOrConnect | undefined;
+  if (app?.id) {
+    appData = { connect: { id: app.id } };
+  } else if (app) {
+    appData = { create: { name: app.name, url: app.url } };
+  }
   if (!id) {
     return dbWrite.model.create({
       select: { id: true },
       data: {
         ...data,
-        app: app
-          ? {
-              create: {
-                name: app.name,
-                url: app.url,
-              },
-            }
-          : undefined,
+        app: appData,
         user: {
           connect: {
             id: userId,
@@ -357,14 +365,7 @@ ModelUpsertInput & { userId: number; meta?: Prisma.ModelCreateInput['meta'] }) =
       where: { id },
       data: {
         ...data,
-        app: app
-          ? {
-              create: {
-                name: app.name,
-                url: app.url,
-              },
-            }
-          : undefined,
+        app: appData,
         tagsOnModels: tagsOnModels
           ? {
               deleteMany: {
@@ -400,6 +401,12 @@ export const createModel = async ({
   app,
   ...data
 }: ModelInput & { userId: number }) => {
+  let appData: ModelAppCreateOrConnect | undefined;
+  if (app?.id) {
+    appData = { connect: { id: app.id } };
+  } else if (app) {
+    appData = { create: { name: app.name, url: app.url } };
+  }
   const parsedModelVersions = prepareModelVersions(modelVersions);
   const allImagesNSFW = parsedModelVersions
     .flatMap((version) => version.images)
@@ -428,14 +435,7 @@ export const createModel = async ({
             id: userId,
           },
         },
-        app: app
-          ? {
-              create: {
-                name: app.name,
-                url: app.url,
-              },
-            }
-          : undefined,
+        app: appData,
         modelVersions: {
           create: parsedModelVersions.map(({ images, files, ...version }, versionIndex) => ({
             ...version,
@@ -505,6 +505,15 @@ export const publishModelById = async ({
     async (tx) => {
       const includeVersions = versionIds && versionIds.length > 0;
       const publishedAt = new Date();
+
+      const { appId } = (await tx.model.findUnique({
+        where: { id },
+        select: { appId: true },
+      })) as Pick<Model, 'appId'>;
+
+      if (appId) {
+        hostModelApp(appId);
+      }
 
       const model = await tx.model.update({
         where: { id },
