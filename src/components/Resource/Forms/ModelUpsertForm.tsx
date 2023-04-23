@@ -1,4 +1,15 @@
-import { Alert, Grid, Group, Input, Paper, Stack, Text, ThemeIcon } from '@mantine/core';
+import {
+  Alert,
+  Grid,
+  Group,
+  Input,
+  Paper,
+  Stack,
+  Text,
+  ThemeIcon,
+  Button,
+  Tooltip,
+} from '@mantine/core';
 import { CheckpointType, CommercialUse, ModelType, TagTarget } from '@prisma/client';
 import {
   IconCurrencyDollarOff,
@@ -6,8 +17,9 @@ import {
   IconBrush,
   IconShoppingCart,
   IconExclamationMark,
+  IconRefresh,
 } from '@tabler/icons';
-import { useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { z } from 'zod';
 
 import {
@@ -52,6 +64,9 @@ export function ModelUpsertForm({ model, children, onSubmit }: Props) {
   const form = useForm({ schema, mode: 'onChange', defaultValues, shouldUnregister: false });
   const queryUtils = trpc.useContext();
 
+  const editing = !!model;
+  const [syncLoading, setSyncLoading] = useState<boolean>(false);
+
   const [type, allowDerivatives] = form.watch(['type', 'allowDerivatives']);
   const nsfwPoi = form.watch(['nsfw', 'poi']);
   const { isDirty, errors } = form.formState;
@@ -81,6 +96,15 @@ export function ModelUpsertForm({ model, children, onSubmit }: Props) {
     if (isDirty) upsertModelMutation.mutate(data);
     else onSubmit(defaultValues);
   };
+
+  // TODO: sync
+  const handleSync = useCallback(() => {
+    console.log('sync');
+    setSyncLoading(true);
+    setTimeout(() => {
+      setSyncLoading(false);
+    }, 1000);
+  }, []);
 
   useEffect(() => {
     if (model) form.reset(model);
@@ -138,6 +162,21 @@ export function ModelUpsertForm({ model, children, onSubmit }: Props) {
               </Group>
               {errors.checkpointType && <Input.Error>{errors.checkpointType.message}</Input.Error>}
             </Stack>
+            {editing && (
+              <Group>
+                <Tooltip label="This is a sync function" withArrow>
+                  <Button
+                    onClick={handleSync}
+                    loading={syncLoading}
+                    loaderPosition="center"
+                    leftIcon={<IconRefresh size={16} />}
+                  >
+                    Sync
+                  </Button>
+                </Tooltip>
+              </Group>
+            )}
+
             <InputTags
               name="tagsOnModels"
               label="Tags"
