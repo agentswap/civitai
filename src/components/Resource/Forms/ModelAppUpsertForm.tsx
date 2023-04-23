@@ -1,5 +1,5 @@
-import { Grid, SegmentedControl, Stack } from '@mantine/core';
-import { useEffect, useMemo, useState } from 'react';
+import { Grid, SegmentedControl, Stack, Text, Group } from '@mantine/core';
+import { forwardRef, useEffect, useMemo, useState } from 'react';
 import { z } from 'zod';
 
 import { Form, InputSelect, InputText, useForm } from '~/libs/form';
@@ -16,12 +16,36 @@ enum UpsertRepoMode {
   Import = 'Import From GitHub',
 }
 
+interface RepositoryItemProps extends React.ComponentPropsWithRef<'div'> {
+  label: string;
+  url: string;
+}
+
+const SelectRepositoryItem = forwardRef<HTMLDivElement, RepositoryItemProps>(
+  ({ label, url, ...others }: RepositoryItemProps, ref) => (
+    <div ref={ref} {...others}>
+      <Group noWrap position="apart">
+        <div>{label}</div>
+        <Text variant="link" component="a" href={url} target="_blank">
+          {label}
+        </Text>
+      </Group>
+    </div>
+  )
+);
+SelectRepositoryItem.displayName = 'SelectRepositoryItem';
+
 export function ModelAppUpsertForm({ model, children, onSubmit }: Props) {
   const [upsertRepoMode, setUpsertRepoMode] = useState<UpsertRepoMode>(UpsertRepoMode.Select);
   const { data: existedRepository = [] } = trpc.modelApp.getAll.useQuery();
 
   const selectExistedRepositoryData = useMemo<{ value: string; label: string }[]>(
-    () => existedRepository.map((item) => ({ value: item.id.toString(), label: item.name })),
+    () =>
+      existedRepository.map((item) => ({
+        value: item.id.toString(),
+        label: item.name,
+        url: item.url,
+      })),
     [existedRepository]
   );
 
@@ -142,8 +166,11 @@ export function ModelAppUpsertForm({ model, children, onSubmit }: Props) {
                 name="existedRepository"
                 label="Choose an existed repository"
                 placeholder="Pick one"
+                itemComponent={SelectRepositoryItem}
                 data={selectExistedRepositoryData}
                 withAsterisk
+                nothingFound="Nobody here"
+                clearable
               />
             ) : upsertRepoMode === UpsertRepoMode.Import ? (
               <Stack spacing={5}>

@@ -152,6 +152,17 @@ export function ModelVersionDetails({
       value: (version.rank?.downloadCountAllTime ?? 0).toLocaleString(),
       visible: !isModelApp,
     },
+    {
+      label: 'App URL',
+      value: hasModelApp ? (
+        <Text variant="link" component="a" href={model?.app?.url} target="_blank">
+          {model?.app?.name}
+        </Text>
+      ) : (
+        '-'
+      ),
+      visible: isModelApp,
+    },
     { label: 'Uploaded', value: formatDate(version.createdAt) },
     {
       label: 'Base Model',
@@ -418,6 +429,19 @@ export function ModelVersionDetails({
                   </LoginRedirect>
                 </div>
               </Tooltip>
+              {isOwnerOrMod && isShowMint && (
+                <Tooltip label={'Start Mint'} position="top" withArrow>
+                  <div>
+                    <Button
+                      onClick={() => setIsShowMintForm(!isShowMintForm)}
+                      color={'gray'}
+                      sx={{ cursor: 'pointer', paddingLeft: 0, paddingRight: 0, width: '36px' }}
+                    >
+                      <IconGavel size={16} />
+                    </Button>
+                  </div>
+                </Tooltip>
+              )}
             </Group>
           )}
           <EarlyAccessAlert
@@ -425,17 +449,7 @@ export function ModelVersionDetails({
             modelType={model.type}
             deadline={version.earlyAccessDeadline}
           />
-          {isOwnerOrMod && isShowMint && (
-            <Stack sx={{ flex: 1 }} spacing={4}>
-              <Button
-                leftIcon={<IconGavel size={16} />}
-                onClick={() => setIsShowMintForm(!isShowMintForm)}
-              >
-                <Text align="center">Start Mint</Text>
-              </Button>
-              {isShowMintForm && <MintForm tokens={tokens} />}
-            </Stack>
-          )}
+          {isOwnerOrMod && isShowMint && isShowMintForm && <MintForm tokens={tokens} />}
 
           <ModelFileAlert versionId={version.id} modelType={model.type} files={version.files} />
           <Accordion
