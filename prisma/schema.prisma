@@ -372,10 +372,19 @@ model License {
   models Model[]
 }
 
+enum ModelAppStatus {
+  STOPPED
+  BUILDING
+  RUNNING
+  RUNTIME_ERROR
+  BUILD_ERROR
+}
+
 model ModelApp {
   id    Int     @id @default(autoincrement())
   name  String
   url   String
+  state ModelAppStatus @default(STOPPED)
   Model Model[]
 
   @@index([name], type: Hash)

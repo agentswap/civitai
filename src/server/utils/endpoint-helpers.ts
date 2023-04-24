@@ -43,6 +43,25 @@ export function WebhookEndpoint(
   return TokenSecuredEndpoint(env.WEBHOOK_TOKEN, handler);
 }
 
+export function WorkerEndpoint(
+  handler: (req: NextApiRequest, res: NextApiResponse) => Promise<void>
+) {
+  return async (req: NextApiRequest, res: NextApiResponse) => {
+    if (req.method !== 'POST') {
+      res.setHeader('Allow', 'POST');
+      res.status(405).json({ error: 'Method not allowed' });
+      return;
+    }
+
+    if (req.headers['x-worker-token'] !== env.WORKER_TOKEN) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+
+    await handler(req, res);
+  };
+}
+
 const PUBLIC_CACHE_MAX_AGE = 300;
 const PUBLIC_CACHE_STALE_WHILE_REVALIDATE = PUBLIC_CACHE_MAX_AGE / 2;
 

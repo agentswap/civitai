@@ -2,7 +2,7 @@
   "name": "model-share",
   "version": "0.1.0",
   "private": true,
-  "packageManager": "npm@9.6.0",
+  "packageManager": "npm@9.6.5",
   "engines": {
     "node": ">=14.0.0",
     "npm": ">=9.6.0",
