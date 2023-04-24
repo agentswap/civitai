@@ -42,3 +42,6 @@ yarn-error.log*
 postgres/data
 redis/data
 minio/
+
+# http
+*.http
