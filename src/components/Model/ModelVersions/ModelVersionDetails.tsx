@@ -62,6 +62,7 @@ import { showErrorNotification } from '~/utils/notifications';
 import { formatKBytes } from '~/utils/number-helpers';
 import { getDisplayName, removeTags } from '~/utils/string-helpers';
 import { trpc } from '~/utils/trpc';
+import { DomainIcon } from '~/components/DomainIcon/DomainIcon';
 
 export function ModelVersionDetails({
   model,
@@ -153,11 +154,14 @@ export function ModelVersionDetails({
       visible: !isModelApp,
     },
     {
-      label: 'App URL',
+      label: 'Git',
       value: hasModelApp ? (
-        <Text variant="link" component="a" href={model?.app?.url} target="_blank">
-          {model?.app?.name}
-        </Text>
+        <Group spacing={2} noWrap>
+          <DomainIcon url={model?.app?.url} size={14} />
+          <Text variant="link" component="a" td="underline" href={model?.app?.url} target="_blank">
+            {model?.app?.name}
+          </Text>
+        </Group>
       ) : (
         '-'
       ),

@@ -33,6 +33,7 @@ import {
   InputCheckbox,
 } from '~/libs/form';
 import { ModelUpsertInput, modelUpsertSchema } from '~/server/schema/model.schema';
+import { showSuccessNotification } from '~/utils/notifications';
 import { showErrorNotification } from '~/utils/notifications';
 import { getDisplayName, splitUppercase } from '~/utils/string-helpers';
 import { trpc } from '~/utils/trpc';
@@ -100,9 +101,22 @@ export function ModelUpsertForm({ model, children, onSubmit }: Props) {
   // TODO: sync
   const handleSync = useCallback(() => {
     console.log('sync');
+
     setSyncLoading(true);
     setTimeout(() => {
       setSyncLoading(false);
+
+      showSuccessNotification({
+        title: 'Sync notification',
+        message: 'Sync successfully!',
+      });
+
+      const error = new Error('Sync failed!');
+      showErrorNotification({
+        error: error,
+        title: 'Sync notification',
+        reason: error.message ?? 'Sync failed!',
+      });
     }, 1000);
   }, []);
 
@@ -163,20 +177,24 @@ export function ModelUpsertForm({ model, children, onSubmit }: Props) {
               {errors.checkpointType && <Input.Error>{errors.checkpointType.message}</Input.Error>}
             </Stack>
             {editing && (
-              <Group>
-                <Tooltip label="This is a sync function" withArrow>
-                  <Button
-                    onClick={handleSync}
-                    loading={syncLoading}
-                    loaderPosition="center"
-                    leftIcon={<IconRefresh size={16} />}
-                  >
-                    Sync
-                  </Button>
-                </Tooltip>
-              </Group>
+              <Input.Wrapper
+                label="Sync with Git Repository"
+                description="Sync this App with it's git repository"
+              >
+                <Group mt={5}>
+                  <Tooltip label="Sync this App with it's git repository" withArrow>
+                    <Button
+                      onClick={handleSync}
+                      loading={syncLoading}
+                      loaderPosition="center"
+                      leftIcon={<IconRefresh size={16} />}
+                    >
+                      Sync
+                    </Button>
+                  </Tooltip>
+                </Group>
+              </Input.Wrapper>
             )}
-
             <InputTags
               name="tagsOnModels"
               label="Tags"
