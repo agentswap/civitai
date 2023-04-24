@@ -1,6 +1,7 @@
 import { Grid, SegmentedControl, Stack, Text, Group } from '@mantine/core';
 import { forwardRef, useEffect, useMemo, useState } from 'react';
 import { z } from 'zod';
+import { DomainIcon } from '~/components/DomainIcon/DomainIcon';
 
 import { Form, InputSelect, InputText, useForm } from '~/libs/form';
 import {
@@ -26,8 +27,14 @@ const SelectRepositoryItem = forwardRef<HTMLDivElement, RepositoryItemProps>(
     <div ref={ref} {...others}>
       <Group noWrap position="apart">
         <div>{label}</div>
-        <Text variant="link" component="a" href={url} target="_blank">
-          {label}
+        <Text
+          component="a"
+          href={url}
+          target="_blank"
+          td="underline"
+          onMouseDown={() => window.open(url, '_blank')}
+        >
+          <DomainIcon url={url} />
         </Text>
       </Group>
     </div>
@@ -171,6 +178,8 @@ export function ModelAppUpsertForm({ model, children, onSubmit }: Props) {
                 withAsterisk
                 nothingFound="Nobody here"
                 clearable
+                maxDropdownHeight={400}
+                searchable
               />
             ) : upsertRepoMode === UpsertRepoMode.Import ? (
               <Stack spacing={5}>

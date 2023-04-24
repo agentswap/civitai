@@ -93,6 +93,7 @@ import { getAssignedTokens } from '~/server/services/model.service';
 import { parseBrowsingMode } from '~/server/createContext';
 import { ModelMeta } from '~/server/schema/model.schema';
 import { AlertWithIcon } from '~/components/AlertWithIcon/AlertWithIcon';
+import { Status, SystemStatus } from '~/components/SystemStatus/SystemStatus';
 
 export const getServerSideProps = createServerSideProps({
   useSSG: true,
@@ -469,6 +470,7 @@ export default function ModelDetailsV2({
                       </Text>
                     </IconBadge>
                   </LoginRedirect>
+                  {isModelApp && <SystemStatus status={Status.Unknown} />}
                   {!isModelApp && (
                     <IconBadge radius="sm" size="lg" icon={<IconDownload size={18} />}>
                       <Text className={classes.modelBadgeText}>
