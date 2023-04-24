@@ -1,4 +1,4 @@
-import { ModelAppStatus } from '@prisma/client';
+import { ModelAppStates } from '@prisma/client';
 import { NextApiRequest, NextApiResponse } from 'next';
 import { z } from 'zod';
 import { dbWrite } from '~/server/db/client';
@@ -9,7 +9,7 @@ const log = createLogger('webhooks', 'blue');
 
 const bodySchema = z.object({
   id: z.number(),
-  state: z.nativeEnum(ModelAppStatus),
+  state: z.nativeEnum(ModelAppStates),
 });
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {

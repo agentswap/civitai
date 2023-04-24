@@ -2,7 +2,7 @@ import { env } from '~/env/server.mjs';
 import { dbRead, dbWrite } from '../db/client';
 import { throwNotFoundError } from '../utils/errorHandling';
 import { createLogger } from '~/utils/logging';
-import { ModelAppStatus } from '@prisma/client';
+import { ModelAppStates } from '@prisma/client';
 
 const log = createLogger('hosting-worker', 'blue');
 const hostingWorkerUrl = new URL(env.HOSTING_WORKER_URL).origin;
@@ -32,7 +32,7 @@ export const hostModelApp = async (appId: number) => {
     // Set model app state to building
     await dbWrite.modelApp.update({
       where: { id },
-      data: { state: ModelAppStatus.BUILDING },
+      data: { state: ModelAppStates.Building },
     });
 
     log(`Creating model app ${id} with name ${name} and url ${url}`);
