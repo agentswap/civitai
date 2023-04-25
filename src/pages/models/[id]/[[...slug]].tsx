@@ -78,7 +78,7 @@ import { formatDate, isFutureDate } from '~/utils/date-helpers';
 import { showErrorNotification, showSuccessNotification } from '~/utils/notifications';
 import { abbreviateNumber } from '~/utils/number-helpers';
 import { scrollToTop } from '~/utils/scroll-utils';
-import { removeTags, splitUppercase } from '~/utils/string-helpers';
+import { getDisplayName, removeTags, splitUppercase } from '~/utils/string-helpers';
 import { trpc } from '~/utils/trpc';
 import { isNumber } from '~/utils/type-guards';
 import { QS } from '~/utils/qs';
@@ -407,7 +407,9 @@ export default function ModelDetailsV2({
 
   const meta = (
     <Meta
-      title={`${model.name} | Stable Diffusion ${model.type} | Agentswap`}
+      title={`${model.name}${
+        selectedVersion ? ' - ' + selectedVersion.name : ''
+      } | Stable Diffusion ${getDisplayName(model.type)} | AgentSwap`}
       description={truncate(removeTags(model.description ?? ''), { length: 150 })}
       image={
         nsfw || versionImages[0]?.url == null
@@ -895,6 +897,7 @@ const useStyles = createStyles((theme) => ({
   },
 
   title: {
+    wordBreak: 'break-word',
     [theme.fn.smallerThan('md')]: {
       fontSize: theme.fontSizes.xs * 2.4, // 24px
       width: '100%',
