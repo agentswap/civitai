@@ -66,7 +66,6 @@ export function ModelUpsertForm({ model, children, onSubmit }: Props) {
   const queryUtils = trpc.useContext();
 
   const editing = !!model;
-  const [syncLoading, setSyncLoading] = useState<boolean>(false);
 
   const [type, allowDerivatives] = form.watch(['type', 'allowDerivatives']);
   const nsfwPoi = form.watch(['nsfw', 'poi']);
@@ -93,32 +92,34 @@ export function ModelUpsertForm({ model, children, onSubmit }: Props) {
       showErrorNotification({ error: new Error(error.message), title: 'Failed to save model' });
     },
   });
-  const handleSubmit = (data: z.infer<typeof schema>) => {
-    if (isDirty) upsertModelMutation.mutate(data);
-    else onSubmit(defaultValues);
-  };
 
-  // TODO: sync
-  const handleSync = useCallback(() => {
-    console.log('sync');
-
-    setSyncLoading(true);
-    setTimeout(() => {
-      setSyncLoading(false);
+  const syncModelMutation = trpc.hostingWorker.hostModelApp.useMutation({
+    onSuccess: async () => {
+      await queryUtils.model.getById.invalidate({ id: model?.id });
+      if (!model?.id) await queryUtils.model.getMyDraftModels.invalidate();
 
       showSuccessNotification({
         title: 'Sync notification',
         message: 'Sync successfully!',
       });
+    },
+    onError: (error) => {
+      showErrorNotification({ error: new Error(error.message), title: 'Sync notification' });
+    },
+  });
 
-      const error = new Error('Sync failed!');
-      showErrorNotification({
-        error: error,
-        title: 'Sync notification',
-        reason: error.message ?? 'Sync failed!',
+  const handleSubmit = (data: z.infer<typeof schema>) => {
+    if (isDirty) upsertModelMutation.mutate(data);
+    else onSubmit(defaultValues);
+  };
+
+  const handleSync = useCallback(() => {
+    if (model?.app?.id) {
+      syncModelMutation.mutate({
+        id: model?.app?.id,
       });
-    }, 1000);
-  }, []);
+    }
+  }, [model?.app?.id, syncModelMutation]);
 
   useEffect(() => {
     if (model) form.reset(model);
@@ -176,7 +177,7 @@ export function ModelUpsertForm({ model, children, onSubmit }: Props) {
               </Group>
               {errors.checkpointType && <Input.Error>{errors.checkpointType.message}</Input.Error>}
             </Stack>
-            {editing && (
+            {editing && model?.app && (
               <Input.Wrapper
                 label="Sync with Git Repository"
                 description="Sync this App with it's git repository"
@@ -185,7 +186,7 @@ export function ModelUpsertForm({ model, children, onSubmit }: Props) {
                   <Tooltip label="Sync this App with it's git repository" withArrow>
                     <Button
                       onClick={handleSync}
-                      loading={syncLoading}
+                      loading={syncModelMutation.isLoading}
                       loaderPosition="center"
                       leftIcon={<IconRefresh size={16} />}
                     >
