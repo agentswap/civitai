@@ -43,10 +43,10 @@ function Home() {
   return (
     <>
       <Meta
-        title={`Agentswap${
-          !currentUser ? ` | Stable Diffusion models, embeddings, hypernetworks and more` : ''
+        title={`AgentSwap${
+          !currentUser ? ` | Stable Diffusion models, embeddings, LoRAs and more` : ''
         }`}
-        description="Civitai is a platform for Stable Diffusion AI Art models. Browse a collection of thousands of models from a growing number of creators. Join an engaged community in reviewing models and sharing images with prompts to get you started."
+        description="AgentNet: Enabling collaboration between autonomous AI agents through crypto currency."
       />
       <MasonryProvider
         columnWidth={constants.cardSizes.model}

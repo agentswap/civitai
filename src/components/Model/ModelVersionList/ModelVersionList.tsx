@@ -1,29 +1,28 @@
 import {
-  ScrollArea,
-  Group,
-  Button,
-  ThemeIcon,
-  Menu,
-  Box,
   ActionIcon,
+  Box,
+  Button,
+  Group,
+  Menu,
+  ScrollArea,
+  ThemeIcon,
   createStyles,
 } from '@mantine/core';
 import { NextLink } from '@mantine/next';
 import { ModelType } from '@prisma/client';
 import {
   IconAlertTriangle,
-  IconDotsVertical,
-  IconTrash,
-  IconEdit,
-  IconPhotoEdit,
   IconChevronLeft,
   IconChevronRight,
+  IconDotsVertical,
+  IconEdit,
   IconFileSettings,
+  IconPhotoEdit,
+  IconTrash,
 } from '@tabler/icons';
 import { useRouter } from 'next/router';
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { openRoutedContext } from '~/providers/RoutedContextProvider';
-
 import { ModelById } from '~/types/router';
 
 const useStyles = createStyles((theme) => ({
@@ -81,6 +80,13 @@ const useStyles = createStyles((theme) => ({
   },
 }));
 
+type State = {
+  scrollPosition: { x: number; y: number };
+  atStart: boolean;
+  atEnd: boolean;
+  largerThanViewport: boolean;
+};
+
 export function ModelVersionList({
   versions,
   selected,
@@ -94,27 +100,47 @@ export function ModelVersionList({
   const isModelApp = useMemo(() => type === ModelType.App, [type]);
 
   const viewportRef = useRef<HTMLDivElement>(null);
-  const [scrollPosition, setScrollPosition] = useState({ x: 0, y: 0 });
-
-  const largerThanViewport =
-    viewportRef.current && viewportRef.current.scrollWidth > viewportRef.current.offsetWidth;
-  const atStart = scrollPosition.x === 0;
-  const atEnd =
-    viewportRef.current &&
-    scrollPosition.x >= viewportRef.current.scrollWidth - viewportRef.current.offsetWidth - 1;
+  const [state, setState] = useState<State>({
+    scrollPosition: { x: 0, y: 0 },
+    atStart: true,
+    atEnd: false,
+    largerThanViewport: false,
+  });
 
   const scrollLeft = () => viewportRef.current?.scrollBy({ left: -200, behavior: 'smooth' });
   const scrollRight = () => viewportRef.current?.scrollBy({ left: 200, behavior: 'smooth' });
+
+  useEffect(() => {
+    if (viewportRef.current) {
+      const newValue = viewportRef.current.scrollWidth > viewportRef.current.offsetWidth;
+
+      if (newValue !== state.largerThanViewport)
+        setState((state) => ({ ...state, largerThanViewport: newValue }));
+    }
+  }, [state.largerThanViewport]);
 
   return (
     <ScrollArea
       className={classes.scrollContainer}
       classNames={classes}
       viewportRef={viewportRef}
-      onScrollPositionChange={setScrollPosition}
+      onScrollPositionChange={(scrollPosition) =>
+        setState((state) => ({
+          ...state,
+          scrollPosition,
+          largerThanViewport:
+            !!viewportRef.current &&
+            viewportRef.current.scrollWidth > viewportRef.current.offsetWidth,
+          atStart: scrollPosition.x === 0,
+          atEnd:
+            !!viewportRef.current &&
+            scrollPosition.x >=
+              viewportRef.current.scrollWidth - viewportRef.current.offsetWidth - 1,
+        }))
+      }
       type="never"
     >
-      <Box className={cx(classes.leftArrow, atStart && classes.hidden)}>
+      <Box className={cx(classes.leftArrow, state.atStart && classes.hidden)}>
         <ActionIcon
           className={classes.arrowButton}
           variant="transparent"
@@ -259,7 +285,12 @@ export function ModelVersionList({
           );
         })}
       </Group>
-      <Box className={cx(classes.rightArrow, (atEnd || !largerThanViewport) && classes.hidden)}>
+      <Box
+        className={cx(
+          classes.rightArrow,
+          (state.atEnd || !state.largerThanViewport) && classes.hidden
+        )}
+      >
         <ActionIcon
           className={classes.arrowButton}
           variant="transparent"
