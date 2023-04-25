@@ -1,18 +1,9 @@
 import { createStyles, keyframes } from '@mantine/core';
+import { ModelAppStates } from '@prisma/client';
 import { IconLoader2 } from '@tabler/icons';
 
-// TODO: Replace
-export enum Status {
-  Running = 'Running',
-  Stopped = 'Stopped',
-  Building = 'Building',
-  RuntimeError = 'Runtime Error',
-  BuildError = 'Build Error',
-  Unknown = 'Unknown',
-}
-
 interface StylesProps {
-  status: Status;
+  status: ModelAppStates;
 }
 
 const pulse = keyframes({
@@ -29,14 +20,12 @@ const loading = keyframes({
 });
 
 const useStyles = createStyles((theme, { status }: StylesProps) => {
-  // TODO: Replace
   const statusColors = {
-    [Status.Running]: theme.colors.teal,
-    [Status.Stopped]: theme.colors.dark,
-    [Status.Building]: theme.colors.blue,
-    [Status.RuntimeError]: theme.colors.red,
-    [Status.BuildError]: theme.colors.yellow,
-    [Status.Unknown]: theme.colors.gray,
+    [ModelAppStates.Stopped]: theme.colors.gray,
+    [ModelAppStates.Building]: theme.colors.blue,
+    [ModelAppStates.Running]: theme.colors.teal,
+    [ModelAppStates.RuntimeError]: theme.colors.red,
+    [ModelAppStates.BuildError]: theme.colors.yellow,
   };
 
   return {
@@ -77,7 +66,7 @@ const useStyles = createStyles((theme, { status }: StylesProps) => {
 });
 
 type Props = {
-  status: Status;
+  status: ModelAppStates;
 };
 
 export function SystemStatus({ status }: Props) {
@@ -86,8 +75,10 @@ export function SystemStatus({ status }: Props) {
   return (
     <>
       <div className={classes.wrapper}>
-        {status === Status.Running && <div className={classes.dot}></div>}
-        {status === Status.Building && <IconLoader2 size={12} className={classes.loading} />}
+        {status === ModelAppStates.Running && <div className={classes.dot}></div>}
+        {status === ModelAppStates.Building && (
+          <IconLoader2 size={12} className={classes.loading} />
+        )}
         {status}
       </div>
     </>
