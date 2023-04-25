@@ -10,22 +10,36 @@ export function RunButton({
   ...props
 }: { modelVersionId: number; app: ModelApp | null } & ButtonProps) {
   return (
-    <Tooltip label="Run Model" withArrow position="top">
-      <Button
-        onClick={() => {
-          if (app) window.open(`${env.NEXT_PUBLIC_APP_URL}/app/${app.id}`);
-          else openContext('runStrategy', { modelVersionId });
-        }}
-        color="green"
-        {...props}
-        sx={{
-          paddingLeft: 0,
-          paddingRight: 0,
-          width: 36,
-        }}
-      >
-        <IconPlayerPlay />
-      </Button>
-    </Tooltip>
+    <>
+      {app ? (
+        <Tooltip label="Run Model App" withArrow position="top">
+          <Button
+            fullWidth
+            onClick={() => window.open(`${env.NEXT_PUBLIC_APP_URL}/app/${app.id}`)}
+            color="green"
+            leftIcon={<IconPlayerPlay size={16} />}
+            {...props}
+          >
+            Run Model App
+          </Button>
+        </Tooltip>
+      ) : (
+        <Tooltip label="Run Model" withArrow position="top">
+          <Button
+            fullWidth
+            onClick={() => openContext('runStrategy', { modelVersionId })}
+            color="green"
+            {...props}
+            sx={{
+              paddingLeft: 0,
+              paddingRight: 0,
+              width: 36,
+            }}
+          >
+            <IconPlayerPlay />
+          </Button>
+        </Tooltip>
+      )}
+    </>
   );
 }

@@ -20,7 +20,7 @@ import {
 import { useDisclosure } from '@mantine/hooks';
 import { closeAllModals, openConfirmModal } from '@mantine/modals';
 import { NextLink } from '@mantine/next';
-import { ModelModifier, ModelStatus, ModelType } from '@prisma/client';
+import { ModelAppStates, ModelModifier, ModelStatus, ModelType } from '@prisma/client';
 import {
   IconArchive,
   IconArrowsLeftRight,
@@ -93,6 +93,7 @@ import { getAssignedTokens } from '~/server/services/model.service';
 import { parseBrowsingMode } from '~/server/createContext';
 import { ModelMeta } from '~/server/schema/model.schema';
 import { AlertWithIcon } from '~/components/AlertWithIcon/AlertWithIcon';
+import { SystemStatus } from '~/components/SystemStatus/SystemStatus';
 
 export const getServerSideProps = createServerSideProps({
   useSSG: true,
@@ -168,6 +169,26 @@ export default function ModelDetailsV2({
   const rawVersionId = router.query.modelVersionId;
   const modelVersionId = Array.isArray(rawVersionId) ? rawVersionId[0] : rawVersionId;
   const isModelApp = useMemo(() => model?.type === ModelType.App, [model?.type]);
+  const hasModelAppState = useMemo(() => !!model?.app?.state, [model?.app?.state]);
+
+  const [isPollModelAppStatus, setIsPollModelAppStatus] = useState(true);
+  const { data: modelApp } = trpc.modelApp.getById.useQuery(
+    { id: model?.app?.id || 0 },
+    {
+      onSuccess: async (result) => {
+        if (result?.state !== ModelAppStates.Building) {
+          setIsPollModelAppStatus(false);
+        }
+
+        await queryUtils.model.getById.invalidate({ id });
+      },
+      onError(err) {
+        setIsPollModelAppStatus(false);
+      },
+      enabled: isModelApp && hasModelAppState && isPollModelAppStatus,
+      refetchInterval: 3000,
+    }
+  );
 
   const isModerator = currentUser?.isModerator ?? false;
   const isOwner = model?.user.id === currentUser?.id || isModerator;
@@ -471,6 +492,11 @@ export default function ModelDetailsV2({
                       </Text>
                     </IconBadge>
                   </LoginRedirect>
+                  {isModelApp && hasModelAppState && (
+                    <SystemStatus
+                      status={modelApp?.state || model?.app?.state || ModelAppStates.Stopped}
+                    />
+                  )}
                   {!isModelApp && (
                     <IconBadge radius="sm" size="lg" icon={<IconDownload size={18} />}>
                       <Text className={classes.modelBadgeText}>
