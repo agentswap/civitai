@@ -21,7 +21,7 @@ import {
   IconTrash,
 } from '@tabler/icons';
 import { useRouter } from 'next/router';
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { openRoutedContext } from '~/providers/RoutedContextProvider';
 import { ModelById } from '~/types/router';
 
