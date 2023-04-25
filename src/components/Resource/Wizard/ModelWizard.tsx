@@ -26,6 +26,7 @@ import { isNumber } from '~/utils/type-guards';
 
 import { PostUpsertForm } from '../Forms/PostUpsertForm';
 import { ModelAppUpsertForm } from '~/components/Resource/Forms/ModelAppUpsertForm';
+import { ModelType } from '@prisma/client';
 
 type ModelWithTags = Omit<ModelById, 'tagsOnModels'> & {
   tagsOnModels: Array<{ id: number; name: string }>;
@@ -57,7 +58,7 @@ export function ModelWizard() {
   const { data: model } = trpc.model.getById.useQuery({ id: Number(id) }, { enabled: !!id });
 
   const editing = !!model;
-  const isApp = model?.type === 'App';
+  const isApp = model?.type === ModelType.App;
   const hasVersions = model && model.modelVersions.length > 0;
   const hasApp = model && model.app;
   const hasFiles = model && model.modelVersions.some((version) => version.files.length > 0);

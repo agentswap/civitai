@@ -1,15 +1,16 @@
 import { createStore, useStore } from 'zustand';
-import { createContext, useContext, useRef, useEffect, SetStateAction } from 'react';
+import { createContext, SetStateAction, useContext, useEffect, useRef } from 'react';
 import { immer } from 'zustand/middleware/immer';
 import { v4 as uuidv4 } from 'uuid';
 import { PostEditDetail, PostEditImage } from '~/server/controllers/post.controller';
 import { devtools } from 'zustand/middleware';
-import { loadImage, blurHashImage } from '~/utils/blurhash';
-import { getMetadata, auditMetaData } from '~/utils/image-metadata';
+import { blurHashImage, loadImage } from '~/utils/blurhash';
+import { auditMetaData, getMetadata } from '~/utils/image-metadata';
 import { isDefined } from '~/utils/type-guards';
 import { trpc } from '~/utils/trpc';
 import { useCFUploadStore } from '~/store/cf-upload.store';
 import { IngestImageReturnType } from '~/server/services/image.service';
+import { ModelApp } from '@prisma/client';
 
 //https://github.com/pmndrs/zustand/blob/main/docs/guides/initialize-state-with-props.md
 export type ImageUpload = {
@@ -48,6 +49,7 @@ type EditPostProps = {
   images: ImageProps[];
   reorder: boolean;
   selectedImageId?: number;
+  app?: ModelApp;
 };
 
 interface EditPostState extends EditPostProps {

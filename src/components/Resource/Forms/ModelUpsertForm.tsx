@@ -1,4 +1,15 @@
-import { Alert, Grid, Group, Input, Paper, Stack, Text, ThemeIcon } from '@mantine/core';
+import {
+  Alert,
+  Grid,
+  Group,
+  Input,
+  Paper,
+  Stack,
+  Text,
+  ThemeIcon,
+  Button,
+  Tooltip,
+} from '@mantine/core';
 import { CheckpointType, CommercialUse, ModelType, TagTarget } from '@prisma/client';
 import {
   IconCurrencyDollarOff,
@@ -6,8 +17,9 @@ import {
   IconBrush,
   IconShoppingCart,
   IconExclamationMark,
+  IconRefresh,
 } from '@tabler/icons';
-import { useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { z } from 'zod';
 
 import {
@@ -21,6 +33,7 @@ import {
   InputCheckbox,
 } from '~/libs/form';
 import { ModelUpsertInput, modelUpsertSchema } from '~/server/schema/model.schema';
+import { showSuccessNotification } from '~/utils/notifications';
 import { showErrorNotification } from '~/utils/notifications';
 import { getDisplayName, splitUppercase } from '~/utils/string-helpers';
 import { trpc } from '~/utils/trpc';
@@ -52,6 +65,8 @@ export function ModelUpsertForm({ model, children, onSubmit }: Props) {
   const form = useForm({ schema, mode: 'onChange', defaultValues, shouldUnregister: false });
   const queryUtils = trpc.useContext();
 
+  const editing = !!model;
+
   const [type, allowDerivatives] = form.watch(['type', 'allowDerivatives']);
   const nsfwPoi = form.watch(['nsfw', 'poi']);
   const { isDirty, errors } = form.formState;
@@ -77,10 +92,34 @@ export function ModelUpsertForm({ model, children, onSubmit }: Props) {
       showErrorNotification({ error: new Error(error.message), title: 'Failed to save model' });
     },
   });
+
+  const syncModelMutation = trpc.hostingWorker.hostModelApp.useMutation({
+    onSuccess: async () => {
+      await queryUtils.model.getById.invalidate({ id: model?.id });
+      if (!model?.id) await queryUtils.model.getMyDraftModels.invalidate();
+
+      showSuccessNotification({
+        title: 'Sync notification',
+        message: 'Sync successfully!',
+      });
+    },
+    onError: (error) => {
+      showErrorNotification({ error: new Error(error.message), title: 'Sync notification' });
+    },
+  });
+
   const handleSubmit = (data: z.infer<typeof schema>) => {
     if (isDirty) upsertModelMutation.mutate(data);
     else onSubmit(defaultValues);
   };
+
+  const handleSync = useCallback(() => {
+    if (model?.app?.id) {
+      syncModelMutation.mutate({
+        id: model?.app?.id,
+      });
+    }
+  }, [model?.app?.id, syncModelMutation]);
 
   useEffect(() => {
     if (model) form.reset(model);
@@ -138,6 +177,25 @@ export function ModelUpsertForm({ model, children, onSubmit }: Props) {
               </Group>
               {errors.checkpointType && <Input.Error>{errors.checkpointType.message}</Input.Error>}
             </Stack>
+            {editing && model?.app && (
+              <Input.Wrapper
+                label="Sync with Git Repository"
+                description="Sync this App with it's git repository"
+              >
+                <Group mt={5}>
+                  <Tooltip label="Sync this App with it's git repository" withArrow>
+                    <Button
+                      onClick={handleSync}
+                      loading={syncModelMutation.isLoading}
+                      loaderPosition="center"
+                      leftIcon={<IconRefresh size={16} />}
+                    >
+                      Sync
+                    </Button>
+                  </Tooltip>
+                </Group>
+              </Input.Wrapper>
+            )}
             <InputTags
               name="tagsOnModels"
               label="Tags"

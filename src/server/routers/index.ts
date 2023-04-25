@@ -26,6 +26,8 @@ import { stripeRouter } from './stripe.router';
 import { tagRouter } from './tag.router';
 import { userLinkRouter } from './user-link.router';
 import { userRouter } from './user.router';
+import { modelAppRouter } from '~/server/routers/model-app.router';
+import { hostingWorkerRouter } from './hosting-worker.router';
 
 export const appRouter = router({
   account: accountRouter,
@@ -37,8 +39,10 @@ export const appRouter = router({
   commentv2: commentv2Router,
   content: contentRouter,
   download: downloadRouter,
+  hostingWorker: hostingWorkerRouter,
   image: imageRouter,
   model: modelRouter,
+  modelApp: modelAppRouter,
   modelFile: modelFileRouter,
   modelVersion: modelVersionRouter,
   moderation: moderationRouter,

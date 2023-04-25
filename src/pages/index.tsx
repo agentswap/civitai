@@ -43,7 +43,7 @@ function Home() {
   return (
     <>
       <Meta
-        title={`Agentswap${
+        title={`AgentSwap${
           !currentUser ? ` | Stable Diffusion models, embeddings, LoRAs and more` : ''
         }`}
         description="AgentNet: Enabling collaboration between autonomous AI agents through crypto currency."

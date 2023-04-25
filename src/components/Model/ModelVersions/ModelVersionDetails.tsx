@@ -16,7 +16,7 @@ import {
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { NextLink } from '@mantine/next';
-import { ModelModifier, ModelStatus } from '@prisma/client';
+import { ModelModifier, ModelStatus, ModelType } from '@prisma/client';
 import { IconDownload, IconGavel, IconHeart, IconLicense, IconMessageCircle2 } from '@tabler/icons';
 import { TRPCClientErrorBase } from '@trpc/client';
 import { DefaultErrorShape } from '@trpc/server';
@@ -62,6 +62,7 @@ import { showErrorNotification } from '~/utils/notifications';
 import { formatKBytes } from '~/utils/number-helpers';
 import { getDisplayName, removeTags } from '~/utils/string-helpers';
 import { trpc } from '~/utils/trpc';
+import { DomainIcon } from '~/components/DomainIcon/DomainIcon';
 
 export function ModelVersionDetails({
   model,
@@ -126,6 +127,9 @@ export function ModelVersionDetails({
   const tokenInfo = useTokenInfo(tokens);
   const archived = model.mode === ModelModifier.Archived;
 
+  const isModelApp = useMemo(() => model.type === ModelType.App, [model.type]);
+  const hasModelApp = useMemo(() => model?.app, [model?.app]);
+
   const modelDetails: DescriptionTableProps['items'] = [
     {
       label: 'Type',
@@ -147,6 +151,21 @@ export function ModelVersionDetails({
     {
       label: 'Downloads',
       value: (version.rank?.downloadCountAllTime ?? 0).toLocaleString(),
+      visible: !isModelApp,
+    },
+    {
+      label: 'Git',
+      value: hasModelApp ? (
+        <Group spacing={2} noWrap>
+          <DomainIcon url={model?.app?.url} size={14} />
+          <Text variant="link" component="a" td="underline" href={model?.app?.url} target="_blank">
+            {model?.app?.name}
+          </Text>
+        </Group>
+      ) : (
+        '-'
+      ),
+      visible: isModelApp,
     },
     { label: 'Uploaded', value: formatDate(version.createdAt) },
     {
@@ -182,7 +201,7 @@ export function ModelVersionDetails({
     {
       label: 'Hash',
       value: <ModelHash hashes={hashes} />,
-      visible: !!hashes.length,
+      visible: !!hashes.length && !isModelApp,
     },
   ];
 
@@ -278,7 +297,7 @@ export function ModelVersionDetails({
   const showPublishButton =
     isOwnerOrMod &&
     (version.status !== ModelStatus.Published || model.status !== ModelStatus.Published) &&
-    hasFiles &&
+    (hasFiles || (isModelApp && hasModelApp)) &&
     hasPosts;
   const publishing = publishModelMutation.isLoading || publishVersionMutation.isLoading;
   const showRequestReview =
@@ -317,64 +336,68 @@ export function ModelVersionDetails({
             </Button>
           ) : (
             <Group spacing="xs" style={{ alignItems: 'flex-start', flexWrap: 'nowrap' }}>
-              {version.canDownload ? (
-                displayCivitaiLink ? (
-                  <Stack sx={{ flex: 1 }} spacing={4}>
-                    <CivitiaLinkManageButton
-                      modelId={model.id}
-                      modelVersionId={version.id}
-                      modelName={model.name}
-                      modelType={model.type}
-                      hashes={version.hashes}
-                      noTooltip
-                    >
-                      {({ color, onClick, ref, icon, label }) => (
-                        <Button
-                          ref={ref}
-                          color={color}
-                          onClick={onClick}
-                          leftIcon={icon}
-                          disabled={!primaryFile}
-                        >
-                          {label}
-                        </Button>
-                      )}
-                    </CivitiaLinkManageButton>
-                    {primaryFileDetails}
-                  </Stack>
+              {!isModelApp &&
+                (version.canDownload ? (
+                  displayCivitaiLink ? (
+                    <Stack sx={{ flex: 1 }} spacing={4}>
+                      <CivitiaLinkManageButton
+                        modelId={model.id}
+                        modelVersionId={version.id}
+                        modelName={model.name}
+                        modelType={model.type}
+                        hashes={version.hashes}
+                        noTooltip
+                      >
+                        {({ color, onClick, ref, icon, label }) => (
+                          <Button
+                            ref={ref}
+                            color={color}
+                            onClick={onClick}
+                            leftIcon={icon}
+                            disabled={!primaryFile}
+                          >
+                            {label}
+                          </Button>
+                        )}
+                      </CivitiaLinkManageButton>
+                      {primaryFileDetails}
+                    </Stack>
+                  ) : (
+                    <Stack sx={{ flex: 1 }} spacing={4}>
+                      <Button
+                        component="a"
+                        href={createModelFileDownloadUrl({
+                          versionId: version.id,
+                          primary: true,
+                        })}
+                        leftIcon={<IconDownload size={16} />}
+                        disabled={!primaryFile || archived}
+                        download
+                      >
+                        <Text align="center">
+                          {primaryFile
+                            ? `Download (${formatKBytes(primaryFile.sizeKB)})`
+                            : 'No file'}
+                        </Text>
+                      </Button>
+                      {primaryFileDetails}
+                    </Stack>
+                  )
                 ) : (
                   <Stack sx={{ flex: 1 }} spacing={4}>
-                    <Button
-                      component="a"
-                      href={createModelFileDownloadUrl({
-                        versionId: version.id,
-                        primary: true,
-                      })}
-                      leftIcon={<IconDownload size={16} />}
-                      disabled={!primaryFile || archived}
-                      download
-                    >
-                      <Text align="center">
-                        {primaryFile ? `Download (${formatKBytes(primaryFile.sizeKB)})` : 'No file'}
-                      </Text>
-                    </Button>
+                    <JoinPopover>
+                      <Button leftIcon={<IconDownload size={16} />} disabled={archived}>
+                        <Text align="center">
+                          {`Download (${formatKBytes(primaryFile?.sizeKB ?? 0)})`}
+                        </Text>
+                      </Button>
+                    </JoinPopover>
                     {primaryFileDetails}
                   </Stack>
-                )
-              ) : (
-                <Stack sx={{ flex: 1 }} spacing={4}>
-                  <JoinPopover>
-                    <Button leftIcon={<IconDownload size={16} />} disabled={archived}>
-                      <Text align="center">
-                        {`Download (${formatKBytes(primaryFile?.sizeKB ?? 0)})`}
-                      </Text>
-                    </Button>
-                  </JoinPopover>
-                  {primaryFileDetails}
-                </Stack>
-              )}
+                ))}
               {displayCivitaiLink ? (
-                version.canDownload ? (
+                !isModelApp &&
+                (version.canDownload ? (
                   <Menu position="bottom-end">
                     <Menu.Target>
                       <Tooltip label="Download options" withArrow>
@@ -393,7 +416,7 @@ export function ModelVersionDetails({
                       </Button>
                     </Tooltip>
                   </JoinPopover>
-                )
+                ))
               ) : (
                 <RunButton app={model.app} modelVersionId={version.id} />
               )}
@@ -410,6 +433,19 @@ export function ModelVersionDetails({
                   </LoginRedirect>
                 </div>
               </Tooltip>
+              {isOwnerOrMod && isShowMint && (
+                <Tooltip label={'Start Mint'} position="top" withArrow>
+                  <div>
+                    <Button
+                      onClick={() => setIsShowMintForm(!isShowMintForm)}
+                      color={'gray'}
+                      sx={{ cursor: 'pointer', paddingLeft: 0, paddingRight: 0, width: '36px' }}
+                    >
+                      <IconGavel size={16} />
+                    </Button>
+                  </div>
+                </Tooltip>
+              )}
             </Group>
           )}
           <EarlyAccessAlert
@@ -417,17 +453,7 @@ export function ModelVersionDetails({
             modelType={model.type}
             deadline={version.earlyAccessDeadline}
           />
-          {isOwnerOrMod && isShowMint && (
-            <Stack sx={{ flex: 1 }} spacing={4}>
-              <Button
-                leftIcon={<IconGavel size={16} />}
-                onClick={() => setIsShowMintForm(!isShowMintForm)}
-              >
-                <Text align="center">Start Mint</Text>
-              </Button>
-              {isShowMintForm && <MintForm tokens={tokens} />}
-            </Stack>
-          )}
+          {isOwnerOrMod && isShowMint && isShowMintForm && <MintForm tokens={tokens} />}
 
           <ModelFileAlert versionId={version.id} modelType={model.type} files={version.files} />
           <Accordion
@@ -498,7 +524,6 @@ export function ModelVersionDetails({
                 />
               </Accordion.Panel>
             </Accordion.Item>
-
             {modelTokenValues?.map((token, index) => (
               <Accordion.Item value={`version-token_${index}`} key={index}>
                 <Accordion.Control>Token {modelTokenKeys[index]}</Accordion.Control>
@@ -519,45 +544,48 @@ export function ModelVersionDetails({
                 </Accordion.Panel>
               </Accordion.Item>
             ))}
-
-            <Accordion.Item
-              value="version-files"
-              sx={(theme) => ({
-                marginTop: theme.spacing.md,
-                marginBottom: !model.locked ? theme.spacing.md : undefined,
-                borderColor: !filesCount ? `${theme.colors.red[4]} !important` : undefined,
-              })}
-            >
-              <Accordion.Control disabled={archived}>
-                <Group position="apart">
-                  {filesCount ? `${filesCount === 1 ? '1 File' : `${filesCount} Files`}` : 'Files'}
-                  {isOwnerOrMod && (
-                    <RoutedContextLink
-                      modal="filesEdit"
-                      modelVersionId={version.id}
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <Text variant="link" size="sm">
-                        Manage Files
-                      </Text>
-                    </RoutedContextLink>
-                  )}
-                </Group>
-              </Accordion.Control>
-              <Accordion.Panel>
-                <Stack spacing={2}>
-                  {hasFiles ? (
-                    downloadFileItems
-                  ) : (
-                    <Center p="xl">
-                      <Text size="md" color="dimmed">
-                        This version is missing files
-                      </Text>
-                    </Center>
-                  )}
-                </Stack>
-              </Accordion.Panel>
-            </Accordion.Item>
+            {!isModelApp && (
+              <Accordion.Item
+                value="version-files"
+                sx={(theme) => ({
+                  marginTop: theme.spacing.md,
+                  marginBottom: !model.locked ? theme.spacing.md : undefined,
+                  borderColor: !filesCount ? `${theme.colors.red[4]} !important` : undefined,
+                })}
+              >
+                <Accordion.Control disabled={archived}>
+                  <Group position="apart">
+                    {filesCount
+                      ? `${filesCount === 1 ? '1 File' : `${filesCount} Files`}`
+                      : 'Files'}
+                    {isOwnerOrMod && (
+                      <RoutedContextLink
+                        modal="filesEdit"
+                        modelVersionId={version.id}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Text variant="link" size="sm">
+                          Manage Files
+                        </Text>
+                      </RoutedContextLink>
+                    )}
+                  </Group>
+                </Accordion.Control>
+                <Accordion.Panel>
+                  <Stack spacing={2}>
+                    {hasFiles ? (
+                      downloadFileItems
+                    ) : (
+                      <Center p="xl">
+                        <Text size="md" color="dimmed">
+                          This version is missing files
+                        </Text>
+                      </Center>
+                    )}
+                  </Stack>
+                </Accordion.Panel>
+              </Accordion.Item>
+            )}
             {!model.locked && (
               <ResourceReviewSummary modelId={model.id} modelVersionId={version.id}>
                 <Accordion.Item value="resource-reviews">
