@@ -492,11 +492,6 @@ export default function ModelDetailsV2({
                       </Text>
                     </IconBadge>
                   </LoginRedirect>
-                  {isModelApp && hasModelAppState && (
-                    <SystemStatus
-                      status={modelApp?.state || model?.app?.state || ModelAppStates.Stopped}
-                    />
-                  )}
                   {!isModelApp && (
                     <IconBadge radius="sm" size="lg" icon={<IconDownload size={18} />}>
                       <Text className={classes.modelBadgeText}>
@@ -522,6 +517,11 @@ export default function ModelDetailsV2({
                         {abbreviateNumber(model.rank?.ratingCountAllTime ?? 0)}
                       </Text>
                     </IconBadge>
+                  )}
+                  {isModelApp && hasModelAppState && (
+                    <SystemStatus
+                      status={modelApp?.state || model?.app?.state || ModelAppStates.Stopped}
+                    />
                   )}
                   {inEarlyAccess && (
                     <IconBadge radius="sm" color="green" size="lg" icon={<IconClock size={18} />}>

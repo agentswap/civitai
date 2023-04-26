@@ -10,7 +10,13 @@ import {
   Button,
   Tooltip,
 } from '@mantine/core';
-import { CheckpointType, CommercialUse, ModelType, TagTarget } from '@prisma/client';
+import {
+  CheckpointType,
+  CommercialUse,
+  ModelAppStates,
+  ModelType,
+  TagTarget,
+} from '@prisma/client';
 import {
   IconCurrencyDollarOff,
   IconPhoto,
@@ -19,8 +25,9 @@ import {
   IconExclamationMark,
   IconRefresh,
 } from '@tabler/icons';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { z } from 'zod';
+import { SystemStatus } from '~/components/SystemStatus/SystemStatus';
 
 import {
   useForm,
@@ -70,6 +77,8 @@ export function ModelUpsertForm({ model, children, onSubmit }: Props) {
   const [type, allowDerivatives] = form.watch(['type', 'allowDerivatives']);
   const nsfwPoi = form.watch(['nsfw', 'poi']);
   const { isDirty, errors } = form.formState;
+  const isModelApp = useMemo(() => model?.type === ModelType.App, [model?.type]);
+  const hasModelApp = useMemo(() => !!model?.app, [model?.app]);
 
   const handleModelTypeChange = (value: ModelType) => {
     form.setValue('checkpointType', null);
@@ -93,9 +102,18 @@ export function ModelUpsertForm({ model, children, onSubmit }: Props) {
     },
   });
 
+  const { data: modelApp } = trpc.modelApp.getById.useQuery(
+    { id: model?.app?.id || 0 },
+    {
+      enabled: isModelApp && hasModelApp,
+      refetchInterval: 3000,
+    }
+  );
+
   const syncModelMutation = trpc.hostingWorker.hostModelApp.useMutation({
     onSuccess: async () => {
       await queryUtils.model.getById.invalidate({ id: model?.id });
+      await queryUtils.modelApp.getById.invalidate({ id: model?.app?.id });
       if (!model?.id) await queryUtils.model.getMyDraftModels.invalidate();
 
       showSuccessNotification({
@@ -183,16 +201,21 @@ export function ModelUpsertForm({ model, children, onSubmit }: Props) {
                 description="Sync this App with it's git repository"
               >
                 <Group mt={5}>
-                  <Tooltip label="Sync this App with it's git repository" withArrow>
-                    <Button
-                      onClick={handleSync}
-                      loading={syncModelMutation.isLoading}
-                      loaderPosition="center"
-                      leftIcon={<IconRefresh size={16} />}
-                    >
-                      Sync
-                    </Button>
-                  </Tooltip>
+                  <Stack spacing="xs">
+                    <Group>
+                      <SystemStatus status={modelApp?.state || ModelAppStates.Stopped} />
+                    </Group>
+                    <Tooltip label="Sync this App with it's git repository" withArrow>
+                      <Button
+                        onClick={handleSync}
+                        loading={syncModelMutation.isLoading}
+                        loaderPosition="center"
+                        leftIcon={<IconRefresh size={16} />}
+                      >
+                        Sync
+                      </Button>
+                    </Tooltip>
+                  </Stack>
                 </Group>
               </Input.Wrapper>
             )}
