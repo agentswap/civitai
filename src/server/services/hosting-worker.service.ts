@@ -26,7 +26,7 @@ export const hostModelApp = async (appId: number) => {
     throw throwNotFoundError(`Could not find model app with id ${appId}`);
   }
 
-  const { id, name, url } = modelAppInfo;
+  const { id, name, url, imageName } = modelAppInfo;
 
   try {
     // Set model app state to building
@@ -56,6 +56,14 @@ export const hostModelApp = async (appId: number) => {
 
     const data: CreateModelAppResponse = await response.json();
     log(`Created model app ${id} with name ${name} and url ${url} on port ${data.port}`);
+
+    if (!imageName || imageName !== data.imageName) {
+      log(`Updating model app ${id} image name ${data.imageName}`);
+      await dbWrite.modelApp.update({
+        where: { id },
+        data: { imageName: data.imageName },
+      });
+    }
 
     return data;
   } catch (error) {
