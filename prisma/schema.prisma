@@ -381,11 +381,12 @@ enum ModelAppStates {
 }
 
 model ModelApp {
-  id    Int     @id @default(autoincrement())
-  name  String
-  url   String
-  state ModelAppStates @default(Stopped)
-  Model Model[]
+  id        Int            @id @default(autoincrement())
+  name      String
+  url       String
+  imageName String?
+  state     ModelAppStates @default(Stopped)
+  Model     Model[]
 
   @@index([name], type: Hash)
 }
