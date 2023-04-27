@@ -1,5 +1,6 @@
-// @ts-check
-import { withPlausibleProxy } from 'next-plausible';
+import * as dns from 'node:dns';
+
+dns.setDefaultResultOrder("ipv4first");
 
 /**
  * Don't be scared of the generics here.
