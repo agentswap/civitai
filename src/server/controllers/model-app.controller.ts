@@ -35,6 +35,7 @@ export const getModelAppByIdHandler = async ({
         name: true,
         state: true,
         url: true,
+        imageName: true,
       },
     });
   } catch (error) {
