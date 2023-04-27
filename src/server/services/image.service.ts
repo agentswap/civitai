@@ -5,6 +5,7 @@ import {
   GetInfiniteImagesInput,
   GetImageInput,
   RemoveImageResourceSchema,
+  GetImagesByCategoryInput,
 } from './../schema/image.schema';
 import {
   CosmeticSource,
@@ -43,12 +44,14 @@ import {
 } from '~/server/utils/errorHandling';
 import { VotableTagModel } from '~/libs/tags';
 import { UserWithCosmetics, userWithCosmeticsSelect } from '~/server/selectors/user.selector';
-import { getTagsNeedingReview } from '~/server/services/system-cache';
+import { getSystemTags, getTagsNeedingReview } from '~/server/services/system-cache';
 import { redis } from '~/server/redis/client';
-import { hashify } from '~/utils/string-helpers';
+import { hashify, hashifyObject } from '~/utils/string-helpers';
 import { TRPCError } from '@trpc/server';
 import { applyUserPreferences, UserPreferencesInput } from '~/server/middleware.trpc';
 import { nsfwLevelOrder } from '~/libs/moderation';
+import { indexOfOr, shuffle } from '~/utils/array-helpers';
+import { getTypeCategories } from '~/server/services/tag.service';
 
 export const getModelVersionImages = async ({ modelVersionId }: { modelVersionId: number }) => {
   const result = await dbRead.imagesOnModels.findMany({
@@ -1291,3 +1294,182 @@ export function applyModRulesSql(AND: Prisma.Sql[], { userId }: { userId?: numbe
   AND.push(Prisma.sql`(${Prisma.join(needsReviewOr, ' OR ')})`);
   AND.push(Prisma.sql`(${Prisma.join(publishedOr, ' OR ')})`);
 }
+
+type GetImageByCategoryRaw = {
+  id: number;
+  tagId: number;
+  name: string;
+  url: string;
+  nsfw: NsfwLevel;
+  width: number;
+  height: number;
+  hash: string;
+  meta: Prisma.JsonValue;
+  hideMeta: boolean;
+  generationProcess: ImageGenerationProcess;
+  mimeType: string;
+  scannedAt: Date;
+  needsReview: boolean;
+  postId: number;
+  username: string | null;
+  userImage: string | null;
+  createdAt: Date;
+  publishedAt: Date | null;
+  cryCount: number;
+  laughCount: number;
+  likeCount: number;
+  dislikeCount: number;
+  heartCount: number;
+  commentCount: number;
+};
+export const getImagesByCategory = async ({
+  userId,
+  ...input
+}: GetImagesByCategoryInput & { userId?: number }) => {
+  input.limit ??= 10;
+
+  let categories = await getTypeCategories({
+    type: 'image',
+    excludeIds: input.excludedTagIds,
+    limit: input.limit + 1,
+    cursor: input.cursor,
+  });
+
+  let nextCursor: number | null = null;
+  if (categories.length > input.limit) nextCursor = categories.pop()?.id ?? null;
+  categories = shuffle(categories);
+
+  const AND = [Prisma.sql`p."publishedAt" IS NOT NULL`];
+
+  // Apply excluded tags
+  if (input.excludedTagIds?.length)
+    AND.push(Prisma.sql`NOT EXISTS (
+      SELECT 1 FROM "TagsOnImage" toi
+      WHERE toi."imageId" = i.id
+      AND toi."tagId" IN (${Prisma.join(input.excludedTagIds)})
+    )`);
+
+  // Apply excluded users
+  if (input.excludedUserIds?.length)
+    AND.push(Prisma.sql`i."userId" NOT IN (${Prisma.join(input.excludedUserIds)})`);
+
+  // Limit to selected user
+  if (input.username) {
+    const targetUser = await dbRead.user.findUnique({
+      where: { username: input.username },
+      select: { id: true },
+    });
+    if (!targetUser) throw new Error('User not found');
+    AND.push(Prisma.sql`i."userId" = ${targetUser.id}`);
+  }
+
+  // Limit to selected model/version
+  if (input.modelId) AND.push(Prisma.sql`mv."modelId" = ${input.modelId}`);
+  if (input.modelVersionId) AND.push(Prisma.sql`ir."modelVersionId" = ${input.modelVersionId}`);
+
+  // Apply mod rules
+  applyModRulesSql(AND, { userId });
+
+  let orderBy = `p."publishedAt" DESC, i.index`;
+  if (input.sort === ImageSort.MostReactions)
+    orderBy = `im."likeCount"+im."heartCount"+im."laughCount"+im."cryCount" DESC NULLS LAST, ${orderBy}`;
+  else if (input.sort === ImageSort.MostComments)
+    orderBy = `im."commentCount" DESC NULLS LAST, ${orderBy}`;
+
+  const targets = categories.map((c) => {
+    return Prisma.sql`(
+      SELECT
+        toi."imageId",
+        "tagId",
+        row_number() OVER (ORDER BY ${Prisma.raw(orderBy)}) "index"
+      FROM "TagsOnImage" toi
+      JOIN "Image" i ON i.id = toi."imageId"
+      JOIN "Post" p ON p.id = i."postId"
+        ${Prisma.raw(
+          input.period !== 'AllTime' && input.periodMode !== 'stats'
+            ? `AND p."publishedAt" > now() - INTERVAL '1 ${input.period}'`
+            : 'AND p."publishedAt" IS NOT NULL'
+        )}
+      ${Prisma.raw(
+        input.modelId || input.modelVersionId
+          ? `JOIN "ImageResource" ir ON ir."imageId" = toi."imageId" AND ir."modelVersionId" IS NOT NULL`
+          : ''
+      )}
+      ${Prisma.raw(input.modelId ? `JOIN "ModelVersion" mv ON mv.id = ir."modelVersionId"` : '')}
+      ${Prisma.raw(
+        orderBy.startsWith('im')
+          ? `LEFT JOIN "ImageMetric" im ON im."imageId" = toi."imageId" AND im.timeframe = '${input.period}'`
+          : ''
+      )}
+      WHERE toi."tagId" = ${c.id}
+      AND ${Prisma.join(AND, ' AND ')}
+      ORDER BY ${Prisma.raw(orderBy)}
+      LIMIT ${Math.ceil((input.imageLimit ?? 12) * 1.25)}
+    )`;
+  });
+
+  let imagesRaw: GetImageByCategoryRaw[] = [];
+  const cacheKey = `trpc:image:imagesByCategory:${hashifyObject(input)}`;
+  const cache = await redis.get(cacheKey);
+  if (cache) imagesRaw = JSON.parse(cache);
+  else {
+    imagesRaw = await dbRead.$queryRaw<GetImageByCategoryRaw[]>`
+      WITH targets AS (
+        ${Prisma.join(targets, ' UNION ALL ')}
+      )
+      SELECT
+        i.id,
+        t."tagId",
+        i.name,
+        i.url,
+        i.nsfw,
+        i.width,
+        i.height,
+        i.hash,
+        i.meta,
+        i."hideMeta",
+        i."generationProcess",
+        i."mimeType",
+        i."scannedAt",
+        i."needsReview",
+        i."postId",
+        u.username,
+        u.image AS "userImage",
+        i."createdAt",
+        p."publishedAt",
+        COALESCE(im."cryCount", 0) "cryCount",
+        COALESCE(im."laughCount", 0) "laughCount",
+        COALESCE(im."likeCount", 0) "likeCount",
+        COALESCE(im."dislikeCount", 0) "dislikeCount",
+        COALESCE(im."heartCount", 0) "heartCount",
+        COALESCE(im."commentCount", 0) "commentCount"
+      FROM targets t
+      JOIN "Image" i ON i.id = t."imageId"
+      JOIN "Post" p ON p.id = i."postId"
+      JOIN "User" u ON u.id = p."userId"
+      LEFT JOIN "ImageMetric" im ON im."imageId" = i.id AND im."timeframe" = 'AllTime'::"MetricTimeframe"
+      ORDER BY t."index"
+    `;
+    await redis.set(cacheKey, JSON.stringify(imagesRaw), { EX: 60 * 3 });
+  }
+
+  const reactions = userId
+    ? await dbRead.imageReaction.findMany({
+        where: { userId, imageId: { in: imagesRaw.map((x) => x.id) } },
+        select: { imageId: true, reaction: true },
+      })
+    : [];
+
+  // Map category record to array
+  const items = categories.map((c) => {
+    const items = imagesRaw
+      .filter((x) => x.tagId === c.id)
+      .map((x) => ({
+        ...x,
+        reactions: userId ? reactions.map((r) => ({ userId, reaction: r.reaction })) : [],
+      }));
+    return { ...c, items };
+  });
+
+  return { items, nextCursor };
+};

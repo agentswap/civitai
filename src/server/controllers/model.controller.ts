@@ -72,20 +72,20 @@ export const getModelHandler = async ({ input, ctx }: { input: GetByIdInput; ctx
     const model = await getModel({
       ...input,
       user: ctx.user,
-      select: {
-        ...modelWithDetailsSelect,
-        meta: true,
-        earlyAccessDeadline: true,
-        mode: true,
-        app: true,
-      },
+      select: { ...modelWithDetailsSelect, app: true },
     });
     if (!model) {
       throw throwNotFoundError(`No model with id ${input.id}`);
     }
 
     const features = getFeatureFlags({ user: ctx.user });
-    const modelVersionIds = model.modelVersions.map((version) => version.id);
+    const filteredVersions = model.modelVersions.filter((version) => {
+      const isOwner = ctx.user?.id === model.user.id || ctx.user?.isModerator;
+      if (isOwner) return true;
+
+      return version.status === ModelStatus.Published;
+    });
+    const modelVersionIds = filteredVersions.map((version) => version.id);
     const posts = await dbRead.post.findMany({
       where: {
         modelVersionId: { in: modelVersionIds },
@@ -99,7 +99,7 @@ export const getModelHandler = async ({ input, ctx }: { input: GetByIdInput; ctx
       ...model,
       app: model.app as ModelApp | null,
       meta: model.meta as ModelMeta | null,
-      modelVersions: model.modelVersions.map((version) => {
+      modelVersions: filteredVersions.map((version) => {
         let earlyAccessDeadline = features.earlyAccessModel
           ? getEarlyAccessDeadline({
               versionCreatedAt: version.createdAt,
@@ -266,6 +266,7 @@ export const getModelsPagedSimpleHandler = async ({
 }) => {
   const { limit = DEFAULT_PAGE_SIZE, page } = input || {};
   const { take, skip } = getPagination(limit, page);
+  console.log(`model search`, input.query);
   const results = await getModels({
     input: { ...input, take, skip },
     user: ctx.user,
@@ -363,7 +364,13 @@ export const publishModelHandler = async ({
   }
 };
 
-export const unpublishModelHandler = async ({ input }: { input: UnpublishModelSchema }) => {
+export const unpublishModelHandler = async ({
+  input,
+  ctx,
+}: {
+  input: UnpublishModelSchema;
+  ctx: DeepNonNullable<Context>;
+}) => {
   try {
     const { id } = input;
     const model = await dbRead.model.findUnique({
@@ -373,7 +380,7 @@ export const unpublishModelHandler = async ({ input }: { input: UnpublishModelSc
     if (!model) throw throwNotFoundError(`No model with id ${input.id}`);
 
     const meta = (model.meta as ModelMeta | null) || {};
-    const updatedModel = await unpublishModelById({ ...input, meta });
+    const updatedModel = await unpublishModelById({ ...input, meta, user: ctx.user });
 
     return updatedModel;
   } catch (error) {

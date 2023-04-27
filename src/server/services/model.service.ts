@@ -19,7 +19,7 @@ import { env } from '~/env/server.mjs';
 import { BrowsingMode, ModelSort } from '~/server/common/enums';
 import { getImageGenerationProcess } from '~/server/common/model-helpers';
 import { Context } from '~/server/createContext';
-import { dbRead, dbWrite } from '~/server/db/client';
+import { dbWrite, dbRead } from '~/server/db/client';
 import { GetAllSchema, GetByIdInput } from '~/server/schema/base.schema';
 import {
   GetAllModelsOutput,
@@ -52,12 +52,13 @@ export const getModel = <TSelect extends Prisma.ModelSelect>({
   user?: SessionUser;
   select: TSelect;
 }) => {
+  const OR: Prisma.Enumerable<Prisma.ModelWhereInput> = [{ status: ModelStatus.Published }];
+  if (user?.id) OR.push({ userId: user.id, deletedAt: null });
+
   return dbRead.model.findFirst({
     where: {
       id,
-      OR: user?.isModerator
-        ? undefined
-        : [{ status: ModelStatus.Published }, { user: { id: user?.id }, deletedAt: null }],
+      OR: !user?.isModerator ? OR : undefined,
     },
     select,
   });
@@ -554,7 +555,8 @@ export const unpublishModelById = async ({
   id,
   reason,
   meta,
-}: UnpublishModelSchema & { meta?: ModelMeta }) => {
+  user,
+}: UnpublishModelSchema & { meta?: ModelMeta; user: SessionUser }) => {
   const model = await dbWrite.$transaction(
     async (tx) => {
       const updatedModel = await tx.model.update({
@@ -563,7 +565,12 @@ export const unpublishModelById = async ({
           status: reason ? ModelStatus.UnpublishedViolation : ModelStatus.Unpublished,
           publishedAt: null,
           meta: reason
-            ? { ...meta, unpublishedReason: reason, unpublishedAt: new Date().toISOString() }
+            ? {
+                ...meta,
+                unpublishedReason: reason,
+                unpublishedAt: new Date().toISOString(),
+                unpublishedBy: user.id,
+              }
             : undefined,
           modelVersions: {
             updateMany: {
