@@ -15,7 +15,6 @@ import Link from 'next/link';
 import { z } from 'zod';
 
 import { NotFound } from '~/components/AppLayout/NotFound';
-import { Files } from '~/components/Resource/Files';
 import { ModelAppUpsertForm } from '~/components/Resource/Forms/ModelAppUpsertForm';
 import { useCurrentUser } from '~/hooks/useCurrentUser';
 import { closeRoutedContext } from '~/providers/RoutedContextProvider';
@@ -25,21 +24,20 @@ import { trpc } from '~/utils/trpc';
 
 export default createRoutedContext({
   schema: z.object({
-    modelVersionId: z.number(),
+    modelId: z.number(),
   }),
   authGuard: true,
-  Element: ({ context, props: { modelVersionId } }) => {
+  Element: ({ context, props: { modelId } }) => {
     const router = useRouter();
 
     const currentUser = useCurrentUser();
-    const { data: modelVersion, isLoading } = trpc.modelVersion.getById.useQuery({
-      id: modelVersionId,
-      withFiles: true,
+    const { data: model, isLoading } = trpc.model.getById.useQuery({
+      id: modelId,
     });
 
     const isModerator = currentUser?.isModerator ?? false;
-    const isOwner = modelVersion?.model?.user.id === currentUser?.id || isModerator;
-    if (!isLoading && modelVersion && !isOwner) closeRoutedContext();
+    const isOwner = model?.user.id === currentUser?.id || isModerator;
+    if (!isLoading && model && !isOwner) closeRoutedContext();
 
     return (
       <Modal opened={context.opened} onClose={context.close} withCloseButton={false} fullScreen>
@@ -48,23 +46,24 @@ export default createRoutedContext({
             <Center>
               <Loader size="lg" />
             </Center>
-          ) : modelVersion ? (
+          ) : model ? (
             <Stack spacing="xl">
-              <Link href={`/models/${modelVersion?.model.id}`} passHref shallow>
+              <Link href={`/models/${model.id}`} passHref shallow>
                 <Anchor size="xs">
                   <Group spacing={4}>
                     <IconArrowLeft size={12} />
-                    <Text inherit>Back to {modelVersion?.model?.name} page</Text>
+                    <Text inherit>Back to {model?.name} page</Text>
                   </Group>
                 </Anchor>
               </Link>
               <Title order={1}>Manage App</Title>
               <ModelAppUpsertForm
-                model={modelVersion?.model}
+                model={{
+                  ...model,
+                  tagsOnModels: model.tagsOnModels.map(({ tag }) => tag) ?? [],
+                }}
                 onSubmit={() => {
-                  router.replace(
-                    `/models/${modelVersion?.model.id}/model-versions/${modelVersion?.id}`
-                  );
+                  router.replace(`/models/${model.id}`);
                 }}
               >
                 {({ loading }) => (

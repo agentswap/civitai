@@ -103,6 +103,7 @@ export function ModelAppUpsertForm({ model, children, onSubmit }: Props) {
     onSuccess: async (data, payload) => {
       await queryUtils.model.getById.invalidate({ id: data.id });
       if (!payload.id) await queryUtils.model.getMyDraftModels.invalidate();
+      await queryUtils.modelApp.getAll.invalidate();
       onSubmit(data);
     },
     onError: (error) => {
@@ -111,7 +112,11 @@ export function ModelAppUpsertForm({ model, children, onSubmit }: Props) {
   });
   const handleSubmit = (data: z.infer<typeof schema>) => {
     if (isDirty) {
-      let _data = null;
+      let _data: {
+        id?: number;
+        name: string;
+        url: string;
+      } | null = null;
 
       if (upsertRepoMode === UpsertRepoMode.Select) {
         const selectedRepository = existedRepository.find(
@@ -131,6 +136,11 @@ export function ModelAppUpsertForm({ model, children, onSubmit }: Props) {
         };
       }
 
+      // Update
+      if (_data && model?.app?.id) {
+        _data['id'] = model?.app?.id;
+      }
+
       if (_data) {
         upsertModelMutation.mutate({ ...model, app: _data } as ModelUpsertInput);
       }
@@ -141,6 +151,11 @@ export function ModelAppUpsertForm({ model, children, onSubmit }: Props) {
     if (model?.app) form.reset(model?.app);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [model?.app]);
+
+  useEffect(() => {
+    selectDefaultRepository && form.setValue('existedRepository', selectDefaultRepository);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectDefaultRepository]);
 
   return (
     <Form form={form} onSubmit={handleSubmit}>

@@ -367,7 +367,13 @@ ModelUpsertInput & { userId: number; meta?: Prisma.ModelCreateInput['meta'] }) =
       where: { id },
       data: {
         ...data,
-        app: appData,
+        app: {
+          ...appData,
+          update: {
+            ...(app?.name && { name: app.name }),
+            ...(app?.url && { url: app.url }),
+          },
+        },
         tagsOnModels: tagsOnModels
           ? {
               deleteMany: {

@@ -15,7 +15,6 @@ import { isNumber } from '~/utils/type-guards';
 
 import { PostUpsertForm } from '../Forms/PostUpsertForm';
 import { ModelType } from '@prisma/client';
-import { ModelAppUpsertForm } from '../Forms/ModelAppUpsertForm';
 
 export function ModelVersionWizard({ data }: Props) {
   const router = useRouter();
@@ -137,23 +136,13 @@ export function ModelVersionWizard({ data }: Props) {
             {isApp ? (
               <Stack>
                 <Title order={3}>Set repository</Title>
-                <ModelAppUpsertForm
-                  model={modelVersion?.model}
-                  onSubmit={() => {
-                    if (editing) return goNext();
-                    router.replace(
-                      `/models/${modelVersion?.model.id}/model-versions/${versionId}/wizard?step=2`
-                    );
-                  }}
-                >
-                  {({ loading }) => (
-                    <Group mt="xl" position="right">
-                      <Button type="submit" loading={loading}>
-                        Next
-                      </Button>
-                    </Group>
-                  )}
-                </ModelAppUpsertForm>
+                <Container size="xl" p="xl">
+                  <Stack align="center">
+                    <Text size="xl">
+                      Model app does not support multi-version settings for the time being
+                    </Text>
+                  </Stack>
+                </Container>
               </Stack>
             ) : (
               <Stack spacing="xl">
