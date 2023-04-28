@@ -2,7 +2,7 @@ import { Button, ButtonProps, Tooltip } from '@mantine/core';
 import { IconPlayerPlay } from '@tabler/icons';
 import { openContext } from '~/providers/CustomModalsProvider';
 import { ModelApp } from '@prisma/client';
-import { env } from '~/env/client.mjs';
+import { NextLink } from '@mantine/next';
 
 export function RunButton({
   modelVersionId,
@@ -15,7 +15,9 @@ export function RunButton({
         <Tooltip label="Run Model App" withArrow position="top">
           <Button
             fullWidth
-            onClick={() => window.open(`${env.NEXT_PUBLIC_APP_URL}/app/${app.id}`)}
+            component={NextLink}
+            href={`/app/${app.id}`}
+            disabled={!app?.id}
             color="green"
             leftIcon={<IconPlayerPlay size={16} />}
             {...props}
