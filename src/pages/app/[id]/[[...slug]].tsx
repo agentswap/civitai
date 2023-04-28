@@ -12,7 +12,6 @@ import { removeTags } from '~/utils/string-helpers';
 import { trpc } from '~/utils/trpc';
 import { SystemStatus } from '~/components/SystemStatus/SystemStatus';
 import AppPlayground from '~/components/AppPlayground/AppPlayground';
-import { env } from '~/env/client.mjs';
 import { NextLink } from '@mantine/next';
 import { modelAppSrc } from '~/utils/modelApp';
 

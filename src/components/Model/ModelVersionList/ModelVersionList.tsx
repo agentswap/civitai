@@ -250,7 +250,7 @@ export function ModelVersionList({
                       onClick={(e) => {
                         e.stopPropagation();
                         openRoutedContext('appEdit', {
-                          modelVersionId: version.id,
+                          modelId: version.modelId,
                         });
                       }}
                     >
