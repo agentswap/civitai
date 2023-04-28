@@ -776,7 +776,7 @@ export default function ModelDetailsV2({
             )}
           </Stack>
           <Group spacing={4} noWrap>
-            {isOwner ? (
+            {isOwner && !isModelApp ? (
               <>
                 <ButtonTooltip label="Add Version">
                   <ActionIcon

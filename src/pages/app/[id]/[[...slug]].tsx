@@ -14,6 +14,7 @@ import { SystemStatus } from '~/components/SystemStatus/SystemStatus';
 import AppPlayground from '~/components/AppPlayground/AppPlayground';
 import { env } from '~/env/client.mjs';
 import { NextLink } from '@mantine/next';
+import { modelAppSrc } from '~/utils/modelApp';
 
 export const getServerSideProps = createServerSideProps({
   useSSG: true,
@@ -55,12 +56,7 @@ export default function ModelDetailsV2({
     }
   );
 
-  const iframeSrc = useMemo(() => {
-    const appUrl = env.NEXT_PUBLIC_APP_URL;
-    return modelApp?.imageName && appUrl.includes('app.')
-      ? appUrl.replace('app', modelApp?.imageName)
-      : '';
-  }, [modelApp?.imageName]);
+  const iframeSrc = useMemo(() => modelAppSrc(modelApp?.imageName || ''), [modelApp?.imageName]);
 
   if (loadingModelApp) return <PageLoader />;
   if (!modelApp) return <NotFound />;
