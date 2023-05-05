@@ -139,7 +139,7 @@ export const modelUpsertSchema = licensingSchema.extend({
   poi: z.boolean().optional(),
   locked: z.boolean().optional(),
   app: modelAppSchema.nullish(),
-  botGroupUrl: z.string().url().optional(),
+  botGroupUrl: z.string().url().nullish(),
 });
 
 export type ModelAppUpsertInput = z.infer<typeof modelAppUpsertSchema>;
