@@ -102,7 +102,6 @@ export const modelSchema = licensingSchema.extend({
   poi: z.boolean().optional(),
   locked: z.boolean().optional(),
   app: modelAppSchema.nullish(),
-  botGroupUrl: z.string().url().optional(),
   modelVersions: z
     .array(modelVersionUpsertSchema)
     .min(1, 'At least one model version is required.'),
@@ -139,7 +138,6 @@ export const modelUpsertSchema = licensingSchema.extend({
   poi: z.boolean().optional(),
   locked: z.boolean().optional(),
   app: modelAppSchema.nullish(),
-  botGroupUrl: z.string().url().optional(),
 });
 
 export type ModelAppUpsertInput = z.infer<typeof modelAppUpsertSchema>;
