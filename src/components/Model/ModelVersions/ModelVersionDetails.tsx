@@ -418,7 +418,11 @@ export function ModelVersionDetails({
                   </JoinPopover>
                 ))
               ) : (
-                <RunButton app={model.app} modelVersionId={version.id} />
+                <RunButton
+                  app={model.app}
+                  botGroupUrl={model?.botGroupUrl}
+                  modelVersionId={version.id}
+                />
               )}
               <Tooltip label={isFavorite ? 'Unlike' : 'Like'} position="top" withArrow>
                 <div>

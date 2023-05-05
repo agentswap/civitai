@@ -22,7 +22,9 @@ import { IconInfoCircle, IconRefresh, IconPhoto, IconArrowBigRight, IconBan } fr
 import { QS } from '~/utils/qs';
 import { trpc } from '~/utils/trpc';
 
-const { openModal: openRunStrategyModal, Modal } = createContextModal<{ modelVersionId: number }>({
+const { openModal: openRunStrategyModal, Modal } = createContextModal<{
+  modelVersionId: number;
+}>({
   name: 'runStrategy',
   title: <Text weight={700}>Generate images using this model now</Text>,
   size: 600,

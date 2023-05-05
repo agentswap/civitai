@@ -7,8 +7,9 @@ import { NextLink } from '@mantine/next';
 export function RunButton({
   modelVersionId,
   app,
+  botGroupUrl,
   ...props
-}: { modelVersionId: number; app: ModelApp | null } & ButtonProps) {
+}: { modelVersionId: number; app: ModelApp | null; botGroupUrl: string | null } & ButtonProps) {
   return (
     <>
       {app ? (
@@ -29,7 +30,13 @@ export function RunButton({
         <Tooltip label="Run Model" withArrow position="top">
           <Button
             fullWidth
-            onClick={() => openContext('runStrategy', { modelVersionId })}
+            onClick={() => {
+              if (botGroupUrl) {
+                window.open('https://t.me/loliai_bot', '_blank');
+              } else {
+                openContext('runStrategy', { modelVersionId });
+              }
+            }}
             color="green"
             {...props}
             sx={{

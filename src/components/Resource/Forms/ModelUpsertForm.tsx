@@ -9,6 +9,7 @@ import {
   ThemeIcon,
   Button,
   Tooltip,
+  Checkbox,
 } from '@mantine/core';
 import {
   CheckpointType,
@@ -71,6 +72,7 @@ export function ModelUpsertForm({ model, children, onSubmit }: Props) {
     allowNoCredit: model?.allowNoCredit ?? true,
     allowDifferentLicense: model?.allowDifferentLicense ?? true,
     category: model?.tagsOnModels?.find((tag) => !!tag.isCategory)?.id,
+    botGroupUrl: model?.botGroupUrl ?? null,
   };
   const form = useForm({ schema, mode: 'onChange', defaultValues, shouldUnregister: false });
   const queryUtils = trpc.useContext();
@@ -82,6 +84,7 @@ export function ModelUpsertForm({ model, children, onSubmit }: Props) {
   const { isDirty, errors } = form.formState;
   const isModelApp = useMemo(() => model?.type === ModelType.App, [model?.type]);
   const hasModelApp = useMemo(() => !!model?.app, [model?.app]);
+  const [useBot, setUseBot] = useState<boolean>(!!model?.botGroupUrl ?? false);
 
   const { data, isLoading: loadingCategories } = trpc.tag.getAll.useQuery({
     categories: true,
@@ -98,6 +101,9 @@ export function ModelUpsertForm({ model, children, onSubmit }: Props) {
     switch (value) {
       case 'Checkpoint':
         form.setValue('checkpointType', CheckpointType.Merge);
+        break;
+      case ModelType.App:
+        form.setValue('botGroupUrl', null);
         break;
       default:
         break;
@@ -139,12 +145,21 @@ export function ModelUpsertForm({ model, children, onSubmit }: Props) {
     },
   });
 
-  const handleSubmit = ({ category, tagsOnModels = [], ...rest }: z.infer<typeof schema>) => {
+  const handleSubmit = ({
+    category,
+    tagsOnModels = [],
+    botGroupUrl,
+    ...rest
+  }: z.infer<typeof schema>) => {
     if (isDirty) {
       const selectedCategory = data?.items.find((cat) => cat.id === category);
       const tags =
         tagsOnModels && selectedCategory ? tagsOnModels.concat([selectedCategory]) : tagsOnModels;
-      upsertModelMutation.mutate({ ...rest, tagsOnModels: tags });
+      upsertModelMutation.mutate({
+        ...rest,
+        tagsOnModels: tags,
+        botGroupUrl: useBot ? botGroupUrl : null,
+      });
     } else onSubmit(defaultValues);
   };
 
@@ -376,6 +391,31 @@ export function ModelUpsertForm({ model, children, onSubmit }: Props) {
                   in an mature context out of respect for the individual.
                 </Text>
               </>
+            )}
+
+            {type !== ModelType.App && (
+              <Paper radius="md" p="xl" withBorder>
+                <Stack>
+                  <Text size="md" weight={500} sx={{ lineHeight: 1.2 }} mb="xs">
+                    Bot Group Url
+                  </Text>
+                  <Checkbox
+                    label="Use Bot"
+                    checked={useBot}
+                    onChange={(event) => setUseBot(event.currentTarget.checked)}
+                  />
+                  {useBot && (
+                    <InputText
+                      name="botGroupUrl"
+                      placeholder="eg: @bot(Bot Group URL)"
+                      withAsterisk
+                      sx={{
+                        flexGrow: 1,
+                      }}
+                    />
+                  )}
+                </Stack>
+              </Paper>
             )}
           </Stack>
         </Grid.Col>

@@ -42,6 +42,7 @@ import { hostModelApp } from '~/server/services/hosting-worker.service';
 type ModelAppCreateOrConnect = {
   connect?: Prisma.ModelAppWhereUniqueInput;
   create?: Prisma.ModelAppCreateWithoutModelInput;
+  update?: Prisma.ModelAppUpdateWithoutModelInput;
 };
 
 export const getModel = <TSelect extends Prisma.ModelSelect>({
@@ -329,7 +330,13 @@ export const upsertModel = ({
 ModelUpsertInput & { userId: number; meta?: Prisma.ModelCreateInput['meta'] }) => {
   let appData: ModelAppCreateOrConnect | undefined;
   if (app?.id) {
-    appData = { connect: { id: app.id } };
+    appData = {
+      connect: { id: app.id },
+      update: {
+        name: app.name,
+        url: app.url,
+      },
+    };
   } else if (app) {
     appData = { create: { name: app.name, url: app.url } };
   }
@@ -367,13 +374,7 @@ ModelUpsertInput & { userId: number; meta?: Prisma.ModelCreateInput['meta'] }) =
       where: { id },
       data: {
         ...data,
-        app: {
-          ...appData,
-          update: {
-            ...(app?.name && { name: app.name }),
-            ...(app?.url && { url: app.url }),
-          },
-        },
+        app: appData,
         tagsOnModels: tagsOnModels
           ? {
               deleteMany: {
