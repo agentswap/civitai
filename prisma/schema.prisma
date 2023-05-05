@@ -333,6 +333,7 @@ model Model {
   mode                ModelModifier?
   appId               Int?
   app                 ModelApp?       @relation(fields: [appId], references: [id], onDelete: SetNull)
+  botGroupUrl         String?
 
   // Licensing
   allowNoCredit         Boolean       @default(true)
