@@ -776,18 +776,21 @@ export default function ModelDetailsV2({
             )}
           </Stack>
           <Group spacing={4} noWrap>
-            {isOwner && !isModelApp ? (
+            {isOwner ? (
               <>
-                <ButtonTooltip label="Add Version">
-                  <ActionIcon
-                    component={NextLink}
-                    href={`/models/${model.id}/model-versions/create`}
-                    variant="light"
-                    color="blue"
-                  >
-                    <IconPlus size={14} />
-                  </ActionIcon>
-                </ButtonTooltip>
+                {(isModelApp && versionCount <= 0) || !isModelApp ? (
+                  <ButtonTooltip label="Add Version">
+                    <ActionIcon
+                      component={NextLink}
+                      href={`/models/${model.id}/model-versions/create`}
+                      variant="light"
+                      color="blue"
+                    >
+                      <IconPlus size={14} />
+                    </ActionIcon>
+                  </ButtonTooltip>
+                ) : null}
+
                 {versionCount > 1 && (
                   <ButtonTooltip label="Rearrange Versions">
                     <ActionIcon onClick={toggle}>
