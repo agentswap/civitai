@@ -15,6 +15,8 @@ import { isNumber } from '~/utils/type-guards';
 
 import { PostUpsertForm } from '../Forms/PostUpsertForm';
 import { ModelType } from '@prisma/client';
+import { NextLink } from '@mantine/next';
+import { ModelAppUpsertForm } from '../Forms/ModelAppUpsertForm';
 
 export function ModelVersionWizard({ data }: Props) {
   const router = useRouter();
@@ -34,6 +36,8 @@ export function ModelVersionWizard({ data }: Props) {
       },
     }
   );
+
+  const { data: model } = trpc.model.getById.useQuery({ id: Number(id) }, { enabled: !!id });
 
   const isApp = modelVersion?.model?.type === ModelType.App;
 
@@ -135,14 +139,38 @@ export function ModelVersionWizard({ data }: Props) {
           <Stepper.Step label={isApp ? 'Set repository' : 'Upload files'}>
             {isApp ? (
               <Stack>
-                <Title order={3}>Set repository</Title>
-                <Container size="xl" p="xl">
-                  <Stack align="center">
-                    <Text size="xl">
-                      Model app does not support multi-version settings for the time being
-                    </Text>
-                  </Stack>
-                </Container>
+                {model && model.modelVersions.length > 1 && (
+                  <Container size="xl" p="xl">
+                    <Stack align="center">
+                      <Text size="xl">
+                        Model app does not support multi-version settings for the time being
+                      </Text>
+                      <Button component={NextLink} href={`/models/${modelVersion?.model.id}`}>
+                        Go back to {modelVersion?.model.name} page
+                      </Button>
+                    </Stack>
+                  </Container>
+                )}
+                {model && model.modelVersions.length <= 1 && (
+                  <ModelAppUpsertForm
+                    model={{
+                      ...model,
+                      tagsOnModels: model.tagsOnModels.map(({ tag }) => tag) ?? [],
+                    }}
+                    onSubmit={goNext}
+                  >
+                    {({ loading }) => (
+                      <Group mt="xl" position="right">
+                        <Button variant="default" onClick={goBack}>
+                          Back
+                        </Button>
+                        <Button type="submit" loading={loading}>
+                          Next
+                        </Button>
+                      </Group>
+                    )}
+                  </ModelAppUpsertForm>
+                )}
               </Stack>
             ) : (
               <Stack spacing="xl">
