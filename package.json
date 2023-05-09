@@ -89,6 +89,7 @@
     "@vladmandic/human": "^3.0.5",
     "@web3modal/ethereum": "^2.2.2",
     "@web3modal/react": "^2.2.2",
+    "ahooks": "^3.7.7",
     "arraybuffer-to-buffer": "^0.0.7",
     "axios": "^1.2.3",
     "blurhash": "^2.0.4",

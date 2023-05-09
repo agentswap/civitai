@@ -91,7 +91,7 @@ export default function ModelDetailsV2({
           ) : (
             <Container size="xl" p="xl">
               <Stack align="center">
-                <Text size="xl">The app you are looking for doesn&apos;t exist</Text>
+                <Text size="xl">{`The app you're looking for isn't launched or doesn't exist`}</Text>
                 <Button component={NextLink} href="/">
                   Go back home
                 </Button>

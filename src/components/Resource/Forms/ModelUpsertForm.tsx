@@ -1,34 +1,14 @@
-import {
-  Alert,
-  Grid,
-  Group,
-  Input,
-  Paper,
-  Stack,
-  Text,
-  ThemeIcon,
-  Button,
-  Tooltip,
-  Checkbox,
-} from '@mantine/core';
-import {
-  CheckpointType,
-  CommercialUse,
-  ModelAppStates,
-  ModelType,
-  TagTarget,
-} from '@prisma/client';
+import { Alert, Grid, Group, Input, Paper, Stack, Text, ThemeIcon, Checkbox } from '@mantine/core';
+import { CheckpointType, CommercialUse, ModelType, TagTarget } from '@prisma/client';
 import {
   IconCurrencyDollarOff,
   IconPhoto,
   IconBrush,
   IconShoppingCart,
   IconExclamationMark,
-  IconRefresh,
 } from '@tabler/icons';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { z } from 'zod';
-import { SystemStatus } from '~/components/SystemStatus/SystemStatus';
 
 import {
   useForm,
@@ -42,10 +22,10 @@ import {
 } from '~/libs/form';
 import { TagSort } from '~/server/common/enums';
 import { ModelUpsertInput, modelUpsertSchema } from '~/server/schema/model.schema';
-import { showSuccessNotification } from '~/utils/notifications';
 import { showErrorNotification } from '~/utils/notifications';
 import { getDisplayName, splitUppercase, titleCase } from '~/utils/string-helpers';
 import { trpc } from '~/utils/trpc';
+import { ModelSystemStatusSync } from './ModelSystemStatusSync';
 
 const schema = modelUpsertSchema
   .extend({
@@ -82,8 +62,6 @@ export function ModelUpsertForm({ model, children, onSubmit }: Props) {
   const [type, allowDerivatives] = form.watch(['type', 'allowDerivatives']);
   const nsfwPoi = form.watch(['nsfw', 'poi']);
   const { isDirty, errors } = form.formState;
-  const isModelApp = useMemo(() => model?.type === ModelType.App, [model?.type]);
-  const hasModelApp = useMemo(() => !!model?.app, [model?.app]);
   const [useBot, setUseBot] = useState<boolean>(!!model?.botGroupUrl ?? false);
 
   const { data, isLoading: loadingCategories } = trpc.tag.getAll.useQuery({
@@ -121,30 +99,6 @@ export function ModelUpsertForm({ model, children, onSubmit }: Props) {
     },
   });
 
-  const { data: modelApp } = trpc.modelApp.getById.useQuery(
-    { id: model?.app?.id || 0 },
-    {
-      enabled: isModelApp && hasModelApp,
-      refetchInterval: 3000,
-    }
-  );
-
-  const syncModelMutation = trpc.hostingWorker.hostModelApp.useMutation({
-    onSuccess: async () => {
-      await queryUtils.model.getById.invalidate({ id: model?.id });
-      await queryUtils.modelApp.getById.invalidate({ id: model?.app?.id });
-      if (!model?.id) await queryUtils.model.getMyDraftModels.invalidate();
-
-      showSuccessNotification({
-        title: 'Sync notification',
-        message: 'Sync successfully!',
-      });
-    },
-    onError: (error) => {
-      showErrorNotification({ error: new Error(error.message), title: 'Sync notification' });
-    },
-  });
-
   const handleSubmit = ({
     category,
     tagsOnModels = [],
@@ -162,14 +116,6 @@ export function ModelUpsertForm({ model, children, onSubmit }: Props) {
       });
     } else onSubmit(defaultValues);
   };
-
-  const handleSync = useCallback(() => {
-    if (model?.app?.id) {
-      syncModelMutation.mutate({
-        id: model?.app?.id,
-      });
-    }
-  }, [model?.app?.id, syncModelMutation]);
 
   useEffect(() => {
     if (model)
@@ -241,30 +187,7 @@ export function ModelUpsertForm({ model, children, onSubmit }: Props) {
               searchable
               withAsterisk
             />
-            {editing && model?.app && (
-              <Input.Wrapper
-                label="Sync with Git Repository"
-                description="Sync this App with it's git repository"
-              >
-                <Group mt={5}>
-                  <Stack spacing="xs">
-                    <Group>
-                      <SystemStatus status={modelApp?.state || ModelAppStates.Stopped} />
-                    </Group>
-                    <Tooltip label="Sync this App with it's git repository" withArrow>
-                      <Button
-                        onClick={handleSync}
-                        loading={syncModelMutation.isLoading}
-                        loaderPosition="center"
-                        leftIcon={<IconRefresh size={16} />}
-                      >
-                        Sync
-                      </Button>
-                    </Tooltip>
-                  </Stack>
-                </Group>
-              </Input.Wrapper>
-            )}
+            {editing && model?.app && <ModelSystemStatusSync model={model} />}
             <InputTags
               name="tagsOnModels"
               label="Tags"

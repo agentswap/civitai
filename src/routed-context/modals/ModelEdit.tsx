@@ -12,7 +12,7 @@ import {
 } from '@mantine/core';
 import { IconArrowLeft } from '@tabler/icons';
 import Link from 'next/link';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { z } from 'zod';
 
 import { NotFound } from '~/components/AppLayout/NotFound';
@@ -21,6 +21,7 @@ import { useCurrentUser } from '~/hooks/useCurrentUser';
 import { closeRoutedContext } from '~/providers/RoutedContextProvider';
 import { createRoutedContext } from '~/routed-context/create-routed-context';
 import { trpc } from '~/utils/trpc';
+import { useDeepCompareEffect } from 'ahooks';
 
 export default createRoutedContext({
   schema: z.object({
@@ -30,13 +31,22 @@ export default createRoutedContext({
   Element: ({ context, props: { modelId } }) => {
     const currentUser = useCurrentUser();
     const { data, isLoading: loadingModel } = trpc.model.getById.useQuery({ id: modelId });
-    const model = useMemo(
-      () => ({
+    const [model, setModel] = useState<any>(data);
+
+    useDeepCompareEffect(() => {
+      setModel({
         ...data,
         tagsOnModels: data?.tagsOnModels.map((tom) => tom.tag),
-      }),
-      [data]
-    );
+      });
+    }, [data]);
+
+    // const model = useMemo(
+    //   () => ({
+    //     ...data,
+    //     tagsOnModels: data?.tagsOnModels.map((tom) => tom.tag),
+    //   }),
+    //   [data]
+    // );
 
     const isModerator = currentUser?.isModerator ?? false;
     const isOwner = model?.user?.id === currentUser?.id || isModerator;
