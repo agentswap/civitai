@@ -31,7 +31,18 @@ export default createRoutedContext({
   Element: ({ context, props: { modelId } }) => {
     const currentUser = useCurrentUser();
     const { data, isLoading: loadingModel } = trpc.model.getById.useQuery({ id: modelId });
-    const [model, setModel] = useState<any>(data);
+
+    // Only initialized once, used for type deduction
+    const initModel = useMemo(
+      () => ({
+        ...data,
+        tagsOnModels: data?.tagsOnModels.map((tom) => tom.tag),
+      }),
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      []
+    );
+
+    const [model, setModel] = useState(initModel);
 
     useDeepCompareEffect(() => {
       setModel({
@@ -39,14 +50,6 @@ export default createRoutedContext({
         tagsOnModels: data?.tagsOnModels.map((tom) => tom.tag),
       });
     }, [data]);
-
-    // const model = useMemo(
-    //   () => ({
-    //     ...data,
-    //     tagsOnModels: data?.tagsOnModels.map((tom) => tom.tag),
-    //   }),
-    //   [data]
-    // );
 
     const isModerator = currentUser?.isModerator ?? false;
     const isOwner = model?.user?.id === currentUser?.id || isModerator;
