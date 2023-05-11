@@ -17,7 +17,7 @@ export function RunButton({
           <Button
             fullWidth
             component={NextLink}
-            href={`/app/${app.id}`}
+            href={`/apps/${app.id}`}
             disabled={!app?.id}
             color="green"
             leftIcon={<IconPlayerPlay size={16} />}
