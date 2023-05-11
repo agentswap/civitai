@@ -2,11 +2,13 @@ import { ActionIcon, Button, Group, Popover, Stack, Title } from '@mantine/core'
 import { Announcements } from '~/components/Announcements/Announcements';
 import { HomeContentToggle } from '~/components/HomeContentToggle/HomeContentToggle';
 
-import { PeriodFilter } from '~/components/Filters';
+import { CategoryTags } from '~/components/CategoryTags/CategoryTags';
+import { PeriodFilter, SortFilter } from '~/components/Filters';
 import { MasonryContainer } from '~/components/MasonryColumns/MasonryContainer';
 import { MasonryProvider } from '~/components/MasonryColumns/MasonryProvider';
 import { Meta } from '~/components/Meta/Meta';
-import { AppsInfinite } from '~/components/Model/Infinite/AppsInfinite';
+import { ModelFiltersDropdown } from '~/components/Model/Infinite/ModelFiltersDropdown';
+import { ModelsInfinite } from '~/components/Model/Infinite/ModelsInfinite';
 import { useModelQueryParams } from '~/components/Model/model.utils';
 import { useCurrentUser } from '~/hooks/useCurrentUser';
 import { hideMobile, showMobile } from '~/libs/sx-helpers';
@@ -68,6 +70,7 @@ function Home() {
             <Group position="apart" spacing={0}>
               <Group>
                 <HomeContentToggle sx={hideMobile} />
+                <SortFilter type="models" />
               </Group>
               <Group spacing={4}>
                 {periodMode && (
@@ -86,9 +89,11 @@ function Home() {
                   </Popover>
                 )}
                 <PeriodFilter type="models" />
+                <ModelFiltersDropdown />
               </Group>
             </Group>
-            <AppsInfinite filters={{ ...queryFilters, periodMode }} />
+            <CategoryTags />
+            <ModelsInfinite filters={{ ...queryFilters, periodMode }} />
           </Stack>
         </MasonryContainer>
       </MasonryProvider>
