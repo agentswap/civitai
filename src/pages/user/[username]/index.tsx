@@ -447,6 +447,9 @@ function NestedLayout({ children }: { children: React.ReactNode }) {
                     <Tabs.Tab value="/posts" icon={<IconAlbum size="1rem" />}>
                       Posts
                     </Tabs.Tab>
+                    <Tabs.Tab value="/apps" icon={<IconBox size="1rem" />}>
+                      Apps
+                    </Tabs.Tab>
                     <Tabs.Tab value="/models" icon={<IconBox size="1rem" />}>
                       Models
                     </Tabs.Tab>

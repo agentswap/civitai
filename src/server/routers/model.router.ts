@@ -11,6 +11,7 @@ import {
   getModelHandler,
   getModelReportDetailsHandler,
   getModelsInfiniteHandler,
+  getModelsOnlyInfiniteHandler,
   getModelsPagedSimpleHandler,
   getModelsWithVersionsHandler,
   getModelVersionsHandler,
@@ -138,6 +139,11 @@ export const modelRouter = router({
     .use(applyUserPreferences)
     .use(cacheIt({ ttl: 60 }))
     .query(getModelsInfiniteHandler),
+  getAllModelsOnly: publicProcedure
+    .input(getAllModelsSchema.extend({ page: z.never().optional() }))
+    .use(applyUserPreferences)
+    .use(cacheIt({ ttl: 60 }))
+    .query(getModelsOnlyInfiniteHandler),
   getAllPagedSimple: publicProcedure
     .input(getAllModelsSchema)
     .use(cacheIt({ ttl: 60 }))

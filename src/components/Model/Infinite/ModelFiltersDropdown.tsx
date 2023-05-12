@@ -104,11 +104,13 @@ export function ModelFiltersDropdown() {
               multiple
               my={4}
             >
-              {Object.values(ModelType).map((type, index) => (
-                <Chip key={index} value={type} {...chipProps}>
-                  {getDisplayName(type)}
-                </Chip>
-              ))}
+              {Object.values(ModelType)
+                .filter((type) => type !== ModelType.App)
+                .map((type, index) => (
+                  <Chip key={index} value={type} {...chipProps}>
+                    {getDisplayName(type)}
+                  </Chip>
+                ))}
             </Chip.Group>
             {showCheckpointType ? (
               <>

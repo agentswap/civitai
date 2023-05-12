@@ -5,7 +5,11 @@ import { useEffect } from 'react';
 import { useInView } from 'react-intersection-observer';
 import { AmbientModelCard } from '~/components/Model/Infinite/ModelCard';
 import { MasonryColumns } from '~/components/MasonryColumns/MasonryColumns';
-import { ModelQueryParams, useModelFilters, useQueryModels } from '~/components/Model/model.utils';
+import {
+  ModelQueryParams,
+  useModelFilters,
+  useQueryModelsOnly,
+} from '~/components/Model/model.utils';
 import { ModelFilterSchema } from '~/providers/FiltersProvider';
 import { removeEmpty } from '~/utils/object-helpers';
 
@@ -20,7 +24,7 @@ export function ModelsInfinite({ filters: filterOverrides = {} }: InfiniteModels
   const filters = removeEmpty({ ...modelFilters, ...filterOverrides });
 
   const { models, isLoading, fetchNextPage, hasNextPage, isRefetching, isFetching } =
-    useQueryModels(filters, {
+    useQueryModelsOnly(filters, {
       keepPreviousData: true,
     });
 
