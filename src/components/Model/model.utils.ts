@@ -66,3 +66,21 @@ export const useQueryModels = (
 
   return { data, models, ...rest };
 };
+
+// Same as useQueryModels, only the getAll method is different
+export const useQueryModelsOnly = (
+  filters?: Partial<Omit<GetAllModelsInput, 'page'>>,
+  options?: { keepPreviousData?: boolean; enabled?: boolean }
+) => {
+  filters ??= {};
+  const { data, ...rest } = trpc.model.getAllModelsOnly.useInfiniteQuery(filters, {
+    getNextPageParam: (lastPage) => (!!lastPage ? lastPage.nextCursor : 0),
+    getPreviousPageParam: (firstPage) => (!!firstPage ? firstPage.nextCursor : 0),
+    trpc: { context: { skipBatch: true } },
+    ...options,
+  });
+
+  const models = useMemo(() => data?.pages.flatMap((x) => (!!x ? x.items : [])) ?? [], [data]);
+
+  return { data, models, ...rest };
+};

@@ -206,7 +206,7 @@ export function AppHeader() {
         ),
       },
       {
-        href: '/?favorites=true',
+        href: '/models?favorites=true',
         visible: !!currentUser,
         label: (
           <Group align="center" spacing="xs">
@@ -216,7 +216,7 @@ export function AppHeader() {
         ),
       },
       {
-        href: '/?hidden=true',
+        href: '/models?hidden=true',
         visible: !!currentUser,
         label: (
           <Group align="center" spacing="xs">

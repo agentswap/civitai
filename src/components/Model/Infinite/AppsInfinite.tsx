@@ -17,13 +17,14 @@ export function AppsInfinite({ filters: filterOverrides = {} }: InfiniteModelsPr
   const { ref, inView } = useInView();
   const modelFilters = useModelFilters();
 
+  // Only App
   const filters = removeEmpty({
     ...({
       ...modelFilters,
       types: ['App'],
       sort: 'Highest Rated',
-      period: 'AllTime',
-      view: 'categories',
+      // period: 'AllTime',
+      // view: 'categories',
       baseModels: undefined,
     } as typeof modelFilters),
     ...filterOverrides,
