@@ -17,7 +17,7 @@ export function useTokenInfo(tokens: TokensProps): TokenMetas {
   const { data: dataERC20 } = useToken({
     address: getRealAddress(tokens?.erc20),
     chainId: chainId,
-  });
+  } as any);
 
   const { data: dataERC721 } = useContractReads({
     contracts: [
@@ -34,7 +34,7 @@ export function useTokenInfo(tokens: TokensProps): TokenMetas {
         functionName: 'symbol',
       },
     ],
-  });
+  } as any);
 
   return {
     [TokenStandard.ERC20]: {
@@ -43,8 +43,14 @@ export function useTokenInfo(tokens: TokensProps): TokenMetas {
       address: dataERC20?.address,
     },
     [TokenStandard.ERC721]: {
-      name: dataERC721?.[0],
-      symbol: dataERC721?.[1],
+      name:
+        dataERC721?.[0]?.status === 'success' && dataERC721?.[0]?.result
+          ? (dataERC721?.[0]?.result as string)
+          : undefined,
+      symbol:
+        dataERC721?.[1]?.status === 'success' && dataERC721?.[1]?.result
+          ? (dataERC721?.[1]?.result as string)
+          : undefined,
       address: tokens?.erc721,
     },
   };
