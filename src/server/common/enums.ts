@@ -21,6 +21,13 @@ export enum ModelSort {
   Newest = 'Newest',
 }
 
+export enum AppSort {
+  HighestRated = 'Highest Rated',
+  MostLiked = 'Most Liked',
+  MostDiscussed = 'Most Discussed',
+  Newest = 'Newest',
+}
+
 export enum ReviewSort {
   Newest = 'newest',
   Oldest = 'oldest',

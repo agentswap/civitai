@@ -9,7 +9,7 @@ import {
 import { z } from 'zod';
 import { constants } from '~/server/common/constants';
 
-import { BrowsingMode, ModelSort } from '~/server/common/enums';
+import { AppSort, BrowsingMode, ModelSort } from '~/server/common/enums';
 import { UnpublishReason, unpublishReasons } from '~/server/common/moderation-helpers';
 import { getByIdSchema, periodModeSchema } from '~/server/schema/base.schema';
 import { modelVersionUpsertSchema } from '~/server/schema/model-version.schema';
@@ -78,9 +78,17 @@ export const getAllModelsSchema = licensingSchema.extend({
   needsReview: z.boolean().optional(),
   earlyAccess: z.boolean().optional(),
 });
+// Same as getAllModelsSchema except sort
+export const getAllAppsSchema = getAllModelsSchema.extend({
+  sort: z.nativeEnum(AppSort).default(constants.appFilterDefaults.sort),
+});
 
 export type GetAllModelsInput = z.input<typeof getAllModelsSchema>;
 export type GetAllModelsOutput = z.infer<typeof getAllModelsSchema>;
+
+// Same as GetAllModelsInput/GetAllModelsOutput
+export type GetAllAppsInput = z.input<typeof getAllAppsSchema>;
+export type GetAllAppsOutput = z.infer<typeof getAllAppsSchema>;
 
 export type ModelApp = z.infer<typeof modelAppSchema>;
 export const modelAppSchema = z.object({

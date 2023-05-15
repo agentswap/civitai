@@ -7,6 +7,7 @@ import {
   ModelType,
 } from '@prisma/client';
 import {
+  AppSort,
   BrowsingMode,
   ImageSort,
   ModelSort,
@@ -41,6 +42,11 @@ const modelFilterSchema = z.object({
   view: viewModeSchema,
 });
 
+export type AppFilterSchema = z.infer<typeof appFilterSchema>;
+const appFilterSchema = modelFilterSchema.extend({
+  sort: z.nativeEnum(AppSort).default(AppSort.HighestRated),
+});
+
 type QuestionFilterSchema = z.infer<typeof questionFilterSchema>;
 const questionFilterSchema = z.object({
   sort: z.nativeEnum(QuestionSort).default(QuestionSort.MostLiked),
@@ -71,13 +77,14 @@ export type CookiesState = {
 
 type StorageState = {
   models: ModelFilterSchema;
+  apps: AppFilterSchema;
   questions: QuestionFilterSchema;
   images: ImageFilterSchema;
   modelImages: ImageFilterSchema;
   posts: PostFilterSchema;
 };
 export type FilterSubTypes = keyof StorageState;
-export type ViewAdjustableTypes = 'models' | 'images' | 'posts';
+export type ViewAdjustableTypes = 'models' | 'apps' | 'images' | 'posts';
 
 type FilterState = CookiesState & StorageState;
 export type FilterKeys<K extends keyof FilterState> = keyof Pick<FilterState, K>;
@@ -85,6 +92,7 @@ export type FilterKeys<K extends keyof FilterState> = keyof Pick<FilterState, K>
 type StoreState = FilterState & {
   setBrowsingMode: (browsingMode: BrowsingMode) => void;
   setModelFilters: (filters: Partial<ModelFilterSchema>) => void;
+  setAppFilters: (filters: Partial<AppFilterSchema>) => void;
   setQuestionFilters: (filters: Partial<QuestionFilterSchema>) => void;
   setImageFilters: (filters: Partial<ImageFilterSchema>) => void;
   setModelImageFilters: (filters: Partial<ImageFilterSchema>) => void;
@@ -99,6 +107,7 @@ const cookieKeys: CookieStorageSchema = {
 type LocalStorageSchema = Record<keyof StorageState, { key: string; schema: z.AnyZodObject }>;
 const localStorageSchemas: LocalStorageSchema = {
   models: { key: 'model-filters', schema: modelFilterSchema },
+  apps: { key: 'app-filters', schema: appFilterSchema },
   questions: { key: 'question-filters', schema: questionFilterSchema },
   images: { key: 'image-filters', schema: imageFilterSchema },
   modelImages: { key: 'model-image-filters', schema: imageFilterSchema },
@@ -170,6 +179,8 @@ const createFilterStore = (initialValues: CookiesState) =>
       },
       setModelFilters: (data) =>
         set((state) => handleLocalStorageChange({ key: 'models', data, state })),
+      setAppFilters: (data) =>
+        set((state) => handleLocalStorageChange({ key: 'apps', data, state })),
       setQuestionFilters: (data) =>
         set((state) => handleLocalStorageChange({ key: 'questions', data, state })),
       setImageFilters: (data) =>
@@ -227,6 +238,7 @@ export function useSetFilters(type: FilterSubTypes) {
       (state) =>
         ({
           models: state.setModelFilters,
+          apps: state.setAppFilters,
           posts: state.setPostFilters,
           images: state.setImageFilters,
           questions: state.setQuestionFilters,

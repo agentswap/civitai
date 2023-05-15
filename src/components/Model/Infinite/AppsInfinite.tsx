@@ -5,35 +5,34 @@ import { useEffect } from 'react';
 import { useInView } from 'react-intersection-observer';
 import { AmbientModelCard } from '~/components/Model/Infinite/ModelCard';
 import { MasonryColumns } from '~/components/MasonryColumns/MasonryColumns';
-import { ModelQueryParams, useModelFilters, useQueryModels } from '~/components/Model/model.utils';
-import { ModelFilterSchema } from '~/providers/FiltersProvider';
+import { AppQueryParams, useAppFilters, useQueryApps } from '~/components/Model/model.utils';
+import { AppFilterSchema } from '~/providers/FiltersProvider';
 import { removeEmpty } from '~/utils/object-helpers';
 
 type InfiniteModelsProps = {
-  filters?: Partial<Omit<ModelQueryParams, 'view'> & Omit<ModelFilterSchema, 'view'>>;
+  filters?: Partial<Omit<AppQueryParams, 'view'> & Omit<AppFilterSchema, 'view'>>;
 };
 
 export function AppsInfinite({ filters: filterOverrides = {} }: InfiniteModelsProps) {
   const { ref, inView } = useInView();
-  const modelFilters = useModelFilters();
+  const appFilters = useAppFilters();
 
   // Only App
   const filters = removeEmpty({
     ...({
-      ...modelFilters,
+      ...appFilters,
       types: ['App'],
-      sort: 'Highest Rated',
-      // period: 'AllTime',
-      // view: 'categories',
       baseModels: undefined,
-    } as typeof modelFilters),
+    } as typeof appFilters),
     ...filterOverrides,
   });
 
-  const { models, isLoading, fetchNextPage, hasNextPage, isRefetching, isFetching } =
-    useQueryModels(filters, {
+  const { models, isLoading, fetchNextPage, hasNextPage, isRefetching, isFetching } = useQueryApps(
+    filters,
+    {
       keepPreviousData: true,
-    });
+    }
+  );
 
   // #region [infinite data fetching]
   useEffect(() => {

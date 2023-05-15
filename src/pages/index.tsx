@@ -2,12 +2,12 @@ import { ActionIcon, Button, Group, Popover, Stack, Title } from '@mantine/core'
 import { Announcements } from '~/components/Announcements/Announcements';
 import { HomeContentToggle } from '~/components/HomeContentToggle/HomeContentToggle';
 
-import { PeriodFilter } from '~/components/Filters';
+import { PeriodFilter, SortFilter } from '~/components/Filters';
 import { MasonryContainer } from '~/components/MasonryColumns/MasonryContainer';
 import { MasonryProvider } from '~/components/MasonryColumns/MasonryProvider';
 import { Meta } from '~/components/Meta/Meta';
 import { AppsInfinite } from '~/components/Model/Infinite/AppsInfinite';
-import { useModelQueryParams } from '~/components/Model/model.utils';
+import { useAppQueryParams } from '~/components/Model/model.utils';
 import { useCurrentUser } from '~/hooks/useCurrentUser';
 import { hideMobile, showMobile } from '~/libs/sx-helpers';
 import { constants } from '~/server/common/constants';
@@ -34,7 +34,7 @@ export const getServerSideProps = createServerSideProps({
 
 function Home() {
   const currentUser = useCurrentUser();
-  const { set, ...queryFilters } = useModelQueryParams();
+  const { set, ...queryFilters } = useAppQueryParams();
   const { username, favorites, hidden, query } = queryFilters;
   const periodMode = query ? ('stats' as PeriodMode) : undefined;
 
@@ -68,6 +68,7 @@ function Home() {
             <Group position="apart" spacing={0}>
               <Group>
                 <HomeContentToggle sx={hideMobile} />
+                <SortFilter type="apps" />
               </Group>
               <Group spacing={4}>
                 {periodMode && (
@@ -85,7 +86,7 @@ function Home() {
                     </Popover.Dropdown>
                   </Popover>
                 )}
-                <PeriodFilter type="models" />
+                <PeriodFilter type="apps" />
               </Group>
             </Group>
             <AppsInfinite filters={{ ...queryFilters, periodMode }} />

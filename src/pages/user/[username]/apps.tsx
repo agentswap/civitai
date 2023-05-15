@@ -11,18 +11,18 @@ import { MasonryProvider } from '~/components/MasonryColumns/MasonryProvider';
 import { ModelFiltersDropdown } from '~/components/Model/Infinite/ModelFiltersDropdown';
 import { ModelsInfinite } from '~/components/Model/Infinite/ModelsInfinite';
 import { AppsInfinite } from '~/components/Model/Infinite/AppsInfinite';
-import { useModelQueryParams } from '~/components/Model/model.utils';
+import { useModelQueryParams, useAppQueryParams } from '~/components/Model/model.utils';
 import { useCurrentUser } from '~/hooks/useCurrentUser';
 import { constants } from '~/server/common/constants';
-import { ModelSort } from '~/server/common/enums';
+import { AppSort } from '~/server/common/enums';
 
 import { UserProfileLayout } from './';
 
 export default function UserAppsPage() {
   const currentUser = useCurrentUser();
-  const { set, ...queryFilters } = useModelQueryParams();
+  const { set, ...queryFilters } = useAppQueryParams();
   const period = queryFilters.period ?? MetricTimeframe.AllTime;
-  const sort = queryFilters.sort ?? ModelSort.Newest;
+  const sort = queryFilters.sort ?? AppSort.Newest;
 
   // currently not showing any content if the username is undefined
   if (!queryFilters.username) return <NotFound />;

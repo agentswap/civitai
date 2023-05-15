@@ -13,7 +13,7 @@ import {
   Text,
 } from '@mantine/core';
 import { openConfirmModal } from '@mantine/modals';
-import { ModelStatus } from '@prisma/client';
+import { ModelStatus, ModelType } from '@prisma/client';
 import { IconAlertCircle, IconExternalLink, IconTrash } from '@tabler/icons';
 import Link from 'next/link';
 import { useState } from 'react';
@@ -120,6 +120,8 @@ export function UserDraftModels({ enabled = false }: Props) {
                 const hasVersion = model._count.modelVersions > 0;
                 const hasFiles = model.modelVersions.some((version) => version._count.files > 0);
                 const hasPosts = model.modelVersions.some((version) => version._count.posts > 0);
+                const hasApp = model.app && model.app.id && model.app.name && model.app.url;
+                const isApp = model?.type === ModelType.App;
 
                 return (
                   <tr key={model.id}>
@@ -145,7 +147,8 @@ export function UserDraftModels({ enabled = false }: Props) {
                         )}
                         <Stack spacing={4}>
                           {!hasVersion && <Text inherit>Needs model version</Text>}
-                          {!hasFiles && <Text inherit>Needs model files</Text>}
+                          {!isApp && !hasFiles && <Text inherit>Needs model files</Text>}
+                          {isApp && !hasApp && <Text inherit>Needs model app</Text>}
                           {!hasPosts && <Text inherit>Needs model post</Text>}
                         </Stack>
                       </Group>
