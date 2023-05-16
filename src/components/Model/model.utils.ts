@@ -3,9 +3,9 @@ import { useRouter } from 'next/router';
 import { useMemo } from 'react';
 import { z } from 'zod';
 import { useFiltersContext } from '~/providers/FiltersProvider';
-import { ModelSort } from '~/server/common/enums';
+import { AppSort, ModelSort } from '~/server/common/enums';
 import { periodModeSchema } from '~/server/schema/base.schema';
-import { GetAllModelsInput } from '~/server/schema/model.schema';
+import { GetAllAppsInput, GetAllModelsInput } from '~/server/schema/model.schema';
 import { usernameSchema } from '~/server/schema/user.schema';
 import { removeEmpty } from '~/utils/object-helpers';
 import { postgresSlugify } from '~/utils/string-helpers';
@@ -13,6 +13,11 @@ import { trpc } from '~/utils/trpc';
 
 export const useModelFilters = () => {
   const storeFilters = useFiltersContext((state) => state.models);
+  return removeEmpty(storeFilters);
+};
+
+export const useAppFilters = () => {
+  const storeFilters = useFiltersContext((state) => state.apps);
   return removeEmpty(storeFilters);
 };
 
@@ -50,12 +55,56 @@ export const useModelQueryParams = () => {
   }, [query, pathname, replace]);
 };
 
+const appQueryParamSchema = modelQueryParamSchema
+  .extend({
+    sort: z.nativeEnum(AppSort),
+  })
+  .partial();
+
+export type AppQueryParams = z.output<typeof appQueryParamSchema>;
+// Same as useModelQueryParams
+export const useAppQueryParams = () => {
+  const { query, pathname, replace } = useRouter();
+
+  return useMemo(() => {
+    const result = appQueryParamSchema.safeParse(query);
+    const data: AppQueryParams = result.success ? result.data : { view: 'categories' };
+
+    return {
+      ...data,
+      set: (filters: Partial<AppQueryParams>) => {
+        replace({ pathname, query: removeEmpty({ ...query, ...filters }) }, undefined, {
+          shallow: true,
+        });
+      },
+    };
+  }, [query, pathname, replace]);
+};
+
 export const useQueryModels = (
   filters?: Partial<Omit<GetAllModelsInput, 'page'>>,
   options?: { keepPreviousData?: boolean; enabled?: boolean }
 ) => {
   filters ??= {};
   const { data, ...rest } = trpc.model.getAll.useInfiniteQuery(filters, {
+    getNextPageParam: (lastPage) => (!!lastPage ? lastPage.nextCursor : 0),
+    getPreviousPageParam: (firstPage) => (!!firstPage ? firstPage.nextCursor : 0),
+    trpc: { context: { skipBatch: true } },
+    ...options,
+  });
+
+  const models = useMemo(() => data?.pages.flatMap((x) => (!!x ? x.items : [])) ?? [], [data]);
+
+  return { data, models, ...rest };
+};
+
+// Same as useQueryModels
+export const useQueryApps = (
+  filters?: Partial<Omit<GetAllAppsInput, 'page'>>,
+  options?: { keepPreviousData?: boolean; enabled?: boolean }
+) => {
+  filters ??= {};
+  const { data, ...rest } = trpc.model.getAllAppsOnly.useInfiniteQuery(filters, {
     getNextPageParam: (lastPage) => (!!lastPage ? lastPage.nextCursor : 0),
     getPreviousPageParam: (firstPage) => (!!firstPage ? firstPage.nextCursor : 0),
     trpc: { context: { skipBatch: true } },

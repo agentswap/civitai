@@ -1,12 +1,13 @@
 import { IsClient } from '~/components/IsClient/IsClient';
 import { SelectMenu } from '~/components/SelectMenu/SelectMenu';
 import { FilterSubTypes, useFiltersContext, useSetFilters } from '~/providers/FiltersProvider';
-import { ImageSort, ModelSort, PostSort, QuestionSort } from '~/server/common/enums';
+import { AppSort, ImageSort, ModelSort, PostSort, QuestionSort } from '~/server/common/enums';
 
 type SortFilterProps = StatefulProps | DumbProps;
 
 const sortOptions = {
   models: Object.values(ModelSort),
+  apps: Object.values(AppSort),
   posts: Object.values(PostSort),
   images: Object.values(ImageSort),
   modelImages: Object.values(ImageSort),
@@ -20,8 +21,8 @@ export function SortFilter(props: SortFilterProps) {
 
 type DumbProps = {
   type: FilterSubTypes;
-  value: ModelSort | PostSort | ImageSort | QuestionSort;
-  onChange: (value: ModelSort | PostSort | ImageSort | QuestionSort) => void;
+  value: ModelSort | AppSort | PostSort | ImageSort | QuestionSort;
+  onChange: (value: ModelSort | AppSort | PostSort | ImageSort | QuestionSort) => void;
 };
 function DumbSortFilter({ type, value, onChange }: DumbProps) {
   return (

@@ -6,6 +6,7 @@ import {
   createModelHandler,
   declineReviewHandler,
   deleteModelHandler,
+  getAppsOnlyInfiniteHandler,
   getDownloadCommandHandler,
   getModelDetailsForReviewHandler,
   getModelHandler,
@@ -31,6 +32,7 @@ import {
   changeModelModifierSchema,
   declineReviewSchema,
   deleteModelSchema,
+  getAllAppsSchema,
   GetAllModelsOutput,
   getAllModelsSchema,
   getDownloadSchema,
@@ -144,6 +146,11 @@ export const modelRouter = router({
     .use(applyUserPreferences)
     .use(cacheIt({ ttl: 60 }))
     .query(getModelsOnlyInfiniteHandler),
+  getAllAppsOnly: publicProcedure
+    .input(getAllAppsSchema.extend({ page: z.never().optional() }))
+    .use(applyUserPreferences)
+    .use(cacheIt({ ttl: 60 }))
+    .query(getAppsOnlyInfiniteHandler),
   getAllPagedSimple: publicProcedure
     .input(getAllModelsSchema)
     .use(cacheIt({ ttl: 60 }))

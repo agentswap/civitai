@@ -1,4 +1,9 @@
-import { ModelMeta, ToggleModelLockInput, UnpublishModelSchema } from './../schema/model.schema';
+import {
+  GetAllAppsOutput,
+  ModelMeta,
+  ToggleModelLockInput,
+  UnpublishModelSchema,
+} from './../schema/model.schema';
 import {
   CommercialUse,
   MetricTimeframe,
@@ -16,7 +21,7 @@ import { factoryContract } from '~/contract';
 import { Factory__factory } from '~/contract/types';
 
 import { env } from '~/env/server.mjs';
-import { BrowsingMode, ModelSort } from '~/server/common/enums';
+import { AppSort, BrowsingMode, ModelSort } from '~/server/common/enums';
 import { getImageGenerationProcess } from '~/server/common/model-helpers';
 import { Context } from '~/server/createContext';
 import { dbWrite, dbRead } from '~/server/db/client';
@@ -401,7 +406,9 @@ export const getModelsOnly = async <TSelect extends Prisma.ModelSelect>({
   const where: Prisma.ModelWhereInput = {
     tagsOnModels: tagname ?? tag ? { some: { tag: { name: tagname ?? tag } } } : undefined,
     user: username || user ? { username: username ?? user } : undefined,
-    type: types?.length ? { in: types } : { notIn: [ModelType.App] },
+    type: types?.length
+      ? { in: types.filter((item) => item !== ModelType.App) }
+      : { notIn: [ModelType.App] },
     nsfw: hideNSFWModels ? false : undefined,
     rank: rating
       ? {
@@ -430,6 +437,196 @@ export const getModelsOnly = async <TSelect extends Prisma.ModelSelect>({
   else if (sort === ModelSort.MostDownloaded)
     orderBy = { rank: { [`downloadCount${period}Rank`]: 'asc' } };
   else if (sort === ModelSort.MostDiscussed)
+    orderBy = { rank: { [`commentCount${period}Rank`]: 'asc' } };
+
+  const items = await dbRead.model.findMany({
+    take,
+    skip,
+    where,
+    cursor: cursor ? { id: cursor } : undefined,
+    orderBy,
+    select,
+  });
+
+  if (count) {
+    const count = await dbRead.model.count({ where });
+    return { items, count };
+  }
+
+  return { items };
+};
+// Same as getModels, only the types statement is different
+export const getAppsOnly = async <TSelect extends Prisma.ModelSelect>({
+  input: {
+    take,
+    skip,
+    cursor,
+    query,
+    tag,
+    tagname,
+    user,
+    username,
+    baseModels,
+    types,
+    sort,
+    period = MetricTimeframe.AllTime,
+    periodMode,
+    rating,
+    favorites,
+    hidden,
+    excludedTagIds,
+    excludedUserIds,
+    excludedIds,
+    checkpointType,
+    status,
+    allowNoCredit,
+    allowDifferentLicense,
+    allowDerivatives,
+    allowCommercialUse,
+    browsingMode,
+    ids,
+    needsReview,
+    earlyAccess,
+  },
+  select,
+  user: sessionUser,
+  count = false,
+}: {
+  input: Omit<GetAllAppsOutput, 'limit' | 'page'> & {
+    take?: number;
+    skip?: number;
+    ids?: number[];
+  };
+  select: TSelect;
+  user?: SessionUser;
+  count?: boolean;
+}) => {
+  const canViewNsfw = sessionUser?.showNsfw ?? env.UNAUTHENTICATED_LIST_NSFW;
+  const AND: Prisma.Enumerable<Prisma.ModelWhereInput> = [];
+  const lowerQuery = query?.toLowerCase();
+
+  // If the user is not a moderator, only show published models
+  if (!sessionUser?.isModerator) {
+    const statusVisibleOr: Prisma.Enumerable<Prisma.ModelWhereInput> = [
+      { status: ModelStatus.Published },
+    ];
+    if (sessionUser && (username || user))
+      statusVisibleOr.push({
+        AND: [{ user: { id: sessionUser.id } }, { status: ModelStatus.Draft }],
+      });
+
+    AND.push({ OR: statusVisibleOr });
+  }
+  if (sessionUser?.isModerator) {
+    if (status?.includes(ModelStatus.Unpublished)) status.push(ModelStatus.UnpublishedViolation);
+    AND.push({ status: status && status.length > 0 ? { in: status } : ModelStatus.Published });
+  }
+
+  // Filter by model permissions
+  if (allowCommercialUse !== undefined) {
+    const commercialUseOr: CommercialUse[] = [];
+    switch (allowCommercialUse) {
+      case CommercialUse.None:
+        commercialUseOr.push(CommercialUse.None);
+        break;
+      case CommercialUse.Image:
+        commercialUseOr.push(CommercialUse.Image);
+      case CommercialUse.Rent:
+        commercialUseOr.push(CommercialUse.Rent);
+      case CommercialUse.Sell:
+        commercialUseOr.push(CommercialUse.Sell);
+    }
+    AND.push({ allowCommercialUse: { in: commercialUseOr } });
+  }
+  if (allowDerivatives !== undefined) AND.push({ allowDerivatives });
+  if (allowDifferentLicense !== undefined) AND.push({ allowDifferentLicense });
+  if (allowNoCredit !== undefined) AND.push({ allowNoCredit });
+
+  if (query) {
+    AND.push({
+      OR: [
+        { name: { contains: query, mode: 'insensitive' } },
+        {
+          modelVersions: {
+            some: {
+              files: query
+                ? {
+                    some: {
+                      hashes: { some: { hash: query } },
+                    },
+                  }
+                : undefined,
+            },
+          },
+        },
+        {
+          modelVersions: {
+            some: {
+              trainedWords: { has: lowerQuery },
+            },
+          },
+        },
+      ],
+    });
+  }
+  if (!!ids?.length) AND.push({ id: { in: ids } });
+  if (excludedUserIds && excludedUserIds.length && !username) {
+    AND.push({ userId: { notIn: excludedUserIds } });
+  }
+  if (excludedTagIds && excludedTagIds.length && !username) {
+    AND.push({
+      tagsOnModels: { none: { tagId: { in: excludedTagIds } } },
+    });
+  }
+  if (excludedIds && !hidden && !username) {
+    AND.push({ id: { notIn: excludedIds } });
+  }
+  if (checkpointType && (!types?.length || types?.includes('Checkpoint'))) {
+    const TypeOr: Prisma.Enumerable<Prisma.ModelWhereInput> = [{ checkpointType }];
+    if (types?.length) {
+      const otherTypes = types.filter((t) => t !== 'Checkpoint');
+      TypeOr.push({ type: { in: otherTypes } });
+    } else TypeOr.push({ type: { not: 'Checkpoint' } });
+    AND.push({ OR: TypeOr });
+  }
+  if (needsReview && sessionUser?.isModerator) {
+    AND.push({ meta: { path: ['needsReview'], equals: true } });
+  }
+  if (earlyAccess) {
+    AND.push({ earlyAccessDeadline: { gte: new Date() } });
+  }
+
+  const hideNSFWModels = browsingMode === BrowsingMode.SFW || !canViewNsfw;
+  const where: Prisma.ModelWhereInput = {
+    tagsOnModels: tagname ?? tag ? { some: { tag: { name: tagname ?? tag } } } : undefined,
+    user: username || user ? { username: username ?? user } : undefined,
+    type: types?.length ? { in: types } : { notIn: undefined },
+    nsfw: hideNSFWModels ? false : undefined,
+    rank: rating
+      ? {
+          AND: [{ ratingAllTime: { gte: rating } }, { ratingAllTime: { lt: rating + 1 } }],
+        }
+      : undefined,
+    engagements: favorites
+      ? { some: { userId: sessionUser?.id, type: 'Favorite' } }
+      : hidden
+      ? { some: { userId: sessionUser?.id, type: 'Hide' } }
+      : undefined,
+    AND: AND.length ? AND : undefined,
+    modelVersions: { some: { baseModel: baseModels?.length ? { in: baseModels } : undefined } },
+    lastVersionAt:
+      period !== MetricTimeframe.AllTime && periodMode !== 'stats'
+        ? { gte: decreaseDate(new Date(), 1, period.toLowerCase() as ManipulateType) }
+        : undefined,
+  };
+
+  let orderBy: Prisma.ModelOrderByWithRelationInput = {
+    lastVersionAt: { sort: 'desc', nulls: 'last' },
+  };
+  if (sort === AppSort.HighestRated) orderBy = { rank: { [`rating${period}Rank`]: 'asc' } };
+  else if (sort === AppSort.MostLiked)
+    orderBy = { rank: { [`favoriteCount${period}Rank`]: 'asc' } };
+  else if (sort === AppSort.MostDiscussed)
     orderBy = { rank: { [`commentCount${period}Rank`]: 'asc' } };
 
   const items = await dbRead.model.findMany({
