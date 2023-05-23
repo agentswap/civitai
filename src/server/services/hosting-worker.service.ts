@@ -37,7 +37,7 @@ export const hostModelApp = async (appId: number) => {
 
     log(`Creating model app ${id} with name ${name} and url ${url}`);
     // Send request to hosting worker
-    const response = await fetch(`${hostingWorkerUrl}/create`, {
+    const response = await fetch(`${hostingWorkerUrl}/model-app`, {
       method: 'POST',
       body: JSON.stringify({ id, name, url }),
       headers: { 'Content-Type': 'application/json' },
